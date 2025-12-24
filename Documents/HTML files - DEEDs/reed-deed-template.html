@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reed Deed (Assignment Deed)</title>
+  <style>
+    :root{
+      --ink:#111; --muted:#555; --hair:#d9d9d9; --paper:#fff; --shade:#f7f7f7;
+    }
+    html, body { background: var(--paper); color: var(--ink); }
+    body{ font-family: ui-serif, Georgia, "Times New Roman", Times, serif; line-height: 1.35; margin:0; padding:0; }
+    .page{ width:210mm; min-height:297mm; margin:0 auto; padding:18mm 16mm 18mm; box-sizing:border-box; position:relative; }
+    .topbar{ display:flex; justify-content:space-between; align-items:flex-start; gap:10mm; border-bottom:1px solid var(--hair); padding-bottom:6mm; margin-bottom:7mm; }
+    .title{ margin:0; font-size:18pt; font-weight:700; letter-spacing:.2px; }
+    .subtitle{ margin:2mm 0 0; color:var(--muted); font-size:10.5pt; }
+    .meta{ text-align:right; font-size:9.5pt; color:var(--muted); white-space:nowrap; }
+    .meta b{ color:var(--ink); font-weight:600; }
+    .muted{ color:var(--muted); }
+    .small{ font-size:9.5pt; }
+    .tiny{ font-size:8.5pt; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .pill{ display:inline-block; border:1px solid var(--hair); border-radius:999px; padding:1.5mm 3mm; font-size:9.5pt; background:var(--shade); }
+    .section{ margin:0 0 7mm; page-break-inside:avoid; }
+    .section h2{ font-size:12pt; margin:0 0 2.5mm; padding:0 0 1.5mm; border-bottom:1px solid var(--hair); letter-spacing:.2px; }
+    .section h3{ font-size:10.5pt; margin:3mm 0 1.5mm; }
+    .section p{ margin:0 0 2.2mm; }
+    .bullets{ margin:0; padding-left:5mm; }
+    .bullets li{ margin:0 0 1.2mm; }
+    table{ width:100%; border-collapse:collapse; margin-top:2mm; font-size:9.8pt; }
+    th, td{ border:1px solid var(--hair); padding:2.2mm 2mm; vertical-align:top; }
+    th{ background:var(--shade); font-weight:700; text-align:left; }
+    td.num, th.num{ text-align:right; white-space:nowrap; }
+    .callout{ border:1px solid var(--hair); background:var(--shade); padding:3mm; border-radius:2mm; margin-top:2mm; }
+    .sig-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; margin-top:4mm; }
+    .sig{ border:1px solid var(--hair); border-radius:2mm; padding:4mm 4mm 3mm; min-height:32mm; background:#fff; }
+    .sig .label{ font-weight:700; margin-bottom:2mm; }
+    .sig .line{ margin-top:12mm; border-top:1px solid var(--hair); padding-top:2mm; color:var(--muted); font-size:9pt; }
+    .footer{ position:absolute; left:16mm; right:16mm; bottom:12mm; padding-top:3mm; border-top:1px solid var(--hair); display:flex; justify-content:space-between; gap:8mm; color:var(--muted); font-size:8.8pt; }
+    .footer .right{ text-align:right; }
+    @page{ size:A4; margin:0; }
+    @media print{ .no-print{ display:none!important; } a{ color:inherit; text-decoration:none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="topbar">
+      <div>
+        <h1 class="title">Reed Deed</h1>
+        <div class="subtitle">Assignment Deed (Need Deeds → Selected Supplier / Offer)</div>
+        <div class="tiny muted" style="margin-top:2mm;">
+          This deed assigns a defined set of Need Deeds to the selected Supplier, making them binding contracts under the agreed terms.
+        </div>
+      </div>
+      <div class="meta">
+        <div><b>Deed ID:</b> <span class="mono">{{deed.id}}</span></div>
+        <div><b>Status:</b> <span class="pill">{{deed.status}}</span></div>
+        <div><b>Version:</b> {{deed.version}}</div>
+        <div><b>Assignment ID:</b> <span class="mono">{{assignment.id}}</span></div>
+        <div><b>Executed at:</b> {{deed.executed_at}}</div>
+        <div><b>Hash:</b> <span class="mono">{{deed.doc_hash}}</span></div>
+      </div>
+    </div>
+
+    <section class="section" id="parties">
+      <h2>1. Parties</h2>
+      <p>This Reed Deed (“Assignment”) is executed between:</p>
+
+      <table aria-label="Parties table">
+        <tr>
+          <th style="width:28%;">Assignor (Platform / Custodian)</th>
+          <td>
+            <div><b>Entity:</b> {{platform.legal_name}}</div>
+            <div><b>Company No.:</b> {{platform.company_number}}</div>
+            <div><b>Address:</b> {{platform.address}}</div>
+          </td>
+        </tr>
+        <tr>
+          <th>Assignee (Supplier)</th>
+          <td>
+            <div><b>Name / Entity:</b> {{supplier.legal_name}}</div>
+            <div><b>Identifier:</b> <span class="mono">{{supplier.id}}</span></div>
+            <div><b>Email:</b> {{supplier.email}}</div>
+            <div><b>Company No.:</b> {{supplier.company_number}}</div>
+            <div><b>Address:</b> {{supplier.address}}</div>
+          </td>
+        </tr>
+        <tr>
+          <th>Initiator (Need Owner)</th>
+          <td>
+            <div><b>Name / Entity:</b> {{initiator.full_name}}</div>
+            <div><b>Identifier:</b> <span class="mono">{{initiator.id}}</span></div>
+            <div><b>Email:</b> {{initiator.email}}</div>
+          </td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="section" id="references">
+      <h2>2. References & Preconditions</h2>
+      <table aria-label="References">
+        <tr>
+          <th style="width:28%;">Need Campaign</th>
+          <td><span class="mono">{{need_campaign.id}}</span> — {{need_campaign.title}}</td>
+        </tr>
+        <tr>
+          <th>Feed Campaign</th>
+          <td><span class="mono">{{feed_campaign.id}}</span> — {{feed_campaign.title}}</td>
+        </tr>
+        <tr>
+          <th>Selected Offer</th>
+          <td><span class="mono">{{offer.id}}</span> (Supplier Offer)</td>
+        </tr>
+        <tr>
+          <th>Feed Deed</th>
+          <td><span class="mono">{{feed_deed.id}}</span> (Signed)</td>
+        </tr>
+      </table>
+
+      <div class="callout small">
+        <b>Precondition:</b> Each Need Deed listed in Section 4 is validly signed and “eligible for assignment”.
+      </div>
+    </section>
+
+    <section class="section" id="effect">
+      <h2>3. Assignment Effect</h2>
+      <p>By executing this deed:</p>
+      <ul class="bullets">
+        <li>The Supplier becomes the contractual counterparty to each listed Backer for the corresponding Need Deed(s).</li>
+        <li>The terms of supply are fixed by the Selected Offer and the referenced Feed Deed, and apply to the assigned Need Deeds.</li>
+        <li>The Backers’ obligations under their Need Deeds become enforceable against the Supplier, and vice versa.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="need-deeds">
+      <h2>4. Covered Need Deeds</h2>
+      <p>This Assignment covers the following Need Deeds (“Assigned Need Deeds”):</p>
+
+      <table aria-label="Covered need deeds">
+        <thead>
+          <tr>
+            <th style="width:6%;">#</th>
+            <th style="width:30%;">Need Deed ID</th>
+            <th>Backer</th>
+            <th class="num" style="width:14%;">Total Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each covered_need_deeds}}
+          <tr>
+            <td>{{this.row_no}}</td>
+            <td class="mono">{{this.need_deed_id}}</td>
+            <td>{{this.backer_name}} <span class="muted">({{this.backer_id}})</span></td>
+            <td class="num">{{this.total_value}}</td>
+          </tr>
+          {{/each}}
+          {{^covered_need_deeds}}
+          <tr>
+            <td>1</td>
+            <td class="mono">need_deed_uuid_here</td>
+            <td>Backer Name (backer_uuid_here)</td>
+            <td class="num">3,600 ₪</td>
+          </tr>
+          {{/covered_need_deeds}}
+        </tbody>
+      </table>
+
+      <p class="table-note">
+        <b>Aggregated Assignment Total:</b> <span class="mono">{{totals.currency}}</span> {{totals.assignment_total}}
+      </p>
+    </section>
+
+    <section class="section" id="fulfillment">
+      <h2>5. Fulfillment & Delivery</h2>
+      <p>
+        The Supplier shall fulfill in accordance with the referenced terms (Need Deeds + Selected Offer + Feed Deed),
+        including delivery location(s) and timelines.
+      </p>
+      <table aria-label="Fulfillment summary">
+        <tr>
+          <th style="width:28%;">Primary delivery location</th>
+          <td>{{delivery.address}}</td>
+        </tr>
+        <tr>
+          <th>Delivery window</th>
+          <td>{{delivery.window}}</td>
+        </tr>
+        <tr>
+          <th>Contact & coordination</th>
+          <td>{{delivery.contact}}</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="section" id="substitution">
+      <h2>6. Counterparty Substitution Logic</h2>
+      <p class="small">
+        Substitution of the Supplier after execution is permitted only if allowed by the Platform Master Terms and/or explicit campaign rules,
+        and only via a new Assignment Deed.
+      </p>
+    </section>
+
+    <section class="section" id="signatures">
+      <h2>7. Execution & Signatures</h2>
+      <p>This deed is executed digitally by the Platform (as custodian) and accepted by the Supplier.</p>
+
+      <div class="sig-grid">
+        <div class="sig">
+          <div class="label">Supplier Acceptance</div>
+          <div class="small">
+            <div><b>Signer:</b> {{supplier.signer_name}}</div>
+            <div><b>Supplier ID:</b> <span class="mono">{{supplier.id}}</span></div>
+            <div><b>Method:</b> {{signature_supplier.method}}</div>
+            <div><b>Signed at:</b> {{signature_supplier.signed_at}}</div>
+          </div>
+          <div class="line">Record ref: <span class="mono">{{signature_supplier.record_ref}}</span></div>
+        </div>
+
+        <div class="sig">
+          <div class="label">Platform Execution (Custody)</div>
+          <div class="small">
+            <div><b>Platform:</b> {{platform.legal_name}}</div>
+            <div><b>Executed at:</b> {{deed.executed_at}}</div>
+            <div><b>Document hash:</b> <span class="mono">{{deed.doc_hash}}</span></div>
+          </div>
+          <div class="line">Verification link / QR target: <span class="mono">{{deed.verify_url}}</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div class="left">
+        <div><b>MishMeshMosh</b> — Reed Deed</div>
+        <div class="tiny">Generated from DB: deed <span class="mono">{{deed.id}}</span> • assignment <span class="mono">{{assignment.id}}</span></div>
+      </div>
+      <div class="right">
+        <div class="tiny">Page 1 of 1</div>
+        <div class="tiny mono">{{deed.doc_hash}}</div>
+      </div>
+    </div>
+
+    <div class="no-print" style="margin-top:10mm; border-top:1px dashed var(--hair); padding-top:6mm; color:var(--muted); font-family: ui-sans-serif, system-ui;">
+      <b>Dev note:</b> Replace <span class="mono">{{...}}</span> placeholders with DB values (server-side render), then print to PDF.
+    </div>
+  </div>
+</body>
+</html>

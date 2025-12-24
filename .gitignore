@@ -1,0 +1,55 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
+node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
+.pnpm-store/v10/files/fa/760fbc99731c6a1f3dead3541a2097b51bd9b031453bad6bdd5de5722987ba1e4c8332e18b406238fb7327690e30ef2d43057489af72fe1ba14a265c639ca1
+.pnpm-store/v10/files/fc/768b3a69e263f45a34b2097e1da57a8c8bf1550f6ed39504ece5b87b267cbd6a7b7522bd6884ccb2bb27f2f10acc82d06ee2dc27757cd1d6659c893d9463fe
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*

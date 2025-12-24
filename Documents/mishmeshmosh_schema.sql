@@ -1,0 +1,1201 @@
+
+-- =====================================================================
+-- MishMeshMosh — Supabase / Postgres Schema (DDL + Indexes + RLS)
+-- =====================================================================
+-- Assumptions:
+-- 1) You use Supabase Auth. auth.uid() returns the authenticated user's UUID.
+-- 2) Your app maps auth.users.id == public.users.id (same UUID).
+--
+-- Notes:
+-- - This script is "starter-safe": RLS is enabled with practical policies.
+-- - You will likely tighten policies as flows become more formal.
+-- - All JSON is stored as jsonb for indexing/operations.
+-- =====================================================================
+
+-- -------------------------
+-- Extensions
+-- -------------------------
+create extension if not exists "pgcrypto";
+
+-- -------------------------
+-- Helper: Updated-at trigger
+-- -------------------------
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+-- -------------------------
+-- Helper: Platform admin check
+-- -------------------------
+-- Uses platform_permissions table defined below.
+create or replace function public.is_platform_admin()
+returns boolean
+language sql
+stable
+as $$
+  select exists (
+    select 1
+    from public.platform_permissions pp
+    where pp.user_id = auth.uid()
+      and pp.permission in ('admin','moderator','deed_auditor')
+      and (pp.scope is null or pp.scope = 'global')
+  );
+$$;
+
+-- =====================================================================
+-- ENUMS
+-- =====================================================================
+do $$ begin
+  create type public.campaign_kind as enum ('need','feed');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.campaign_status_need as enum ('draft','review','live','seeded','closed_unseeded','canceled');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.campaign_status_feed as enum ('draft','review','open','supplier_selected','closed_no_winner','canceled');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.deed_kind as enum ('need_deed','feed_deed','assignment_deed','weed_deed');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.deed_status as enum (
+    'draft','review','open_for_signature',
+    'signed','executed','active',
+    'fulfilled','expired','disputed','voided'
+  );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.visibility as enum ('public','private','unlisted');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.participation_kind as enum ('viewer','backer','supplier','initiator','operator');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.offer_status as enum ('draft','submitted','withdrawn','rejected','selected');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.assignment_status as enum ('draft','executed','active','fulfilled','failed','disputed','voided');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type public.fulfillment_status as enum ('pending','in_progress','delivered','accepted','failed','disputed');
+exception when duplicate_object then null; end $$;
+
+-- =====================================================================
+-- TABLES
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- users
+-- ---------------------------------------------------------------------
+-- Mirrors auth.users.id (recommended). Store profile fields here.
+create table if not exists public.users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique,
+  phone text unique,
+  full_name text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_users_updated_at on public.users;
+create trigger trg_users_updated_at
+before update on public.users
+for each row execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- user_verifications
+-- ---------------------------------------------------------------------
+create table if not exists public.user_verifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  method text not null,               -- e.g., email/phone/manual/kyc/company
+  status text not null,               -- e.g., pending/verified/rejected
+  metadata_json jsonb,
+  verified_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- platform_permissions
+-- ---------------------------------------------------------------------
+create table if not exists public.platform_permissions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  permission text not null,           -- admin/moderator/deed_auditor
+  scope text,                         -- null or 'global' or future: group:<uuid>
+  created_at timestamptz not null default now(),
+  unique (user_id, permission, scope)
+);
+
+-- ---------------------------------------------------------------------
+-- groups / group_members
+-- ---------------------------------------------------------------------
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  owner_id uuid references public.users(id),
+  visibility public.visibility not null default 'private',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_groups_updated_at on public.groups;
+create trigger trg_groups_updated_at
+before update on public.groups
+for each row execute function public.set_updated_at();
+
+create table if not exists public.group_members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  member_role text not null default 'member', -- owner/mod/member
+  created_at timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
+-- ---------------------------------------------------------------------
+-- campaigns (base)
+-- ---------------------------------------------------------------------
+create table if not exists public.campaigns (
+  id uuid primary key default gen_random_uuid(),
+  kind public.campaign_kind not null,
+  title text not null,
+  description text,
+  visibility public.visibility not null default 'public',
+  group_id uuid references public.groups(id),
+  created_by uuid references public.users(id),
+  status_need public.campaign_status_need,
+  status_feed public.campaign_status_feed,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  -- Constraints:
+  constraint chk_campaign_time_range
+    check (ends_at is null or starts_at is null or ends_at >= starts_at),
+
+  constraint chk_campaign_kind_status
+    check (
+      (kind = 'need' and status_need is not null and status_feed is null)
+      or
+      (kind = 'feed' and status_feed is not null and status_need is null)
+    )
+);
+
+drop trigger if exists trg_campaigns_updated_at on public.campaigns;
+create trigger trg_campaigns_updated_at
+before update on public.campaigns
+for each row execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- need_campaigns (typed extension)
+-- ---------------------------------------------------------------------
+create table if not exists public.need_campaigns (
+  campaign_id uuid primary key references public.campaigns(id) on delete cascade,
+  threshold_type text not null,         -- qty/value/participants/etc.
+  threshold_qty numeric,
+  threshold_value numeric,
+  currency text,
+  deadline_at timestamptz,
+  deposit_policy_json jsonb,
+  payment_structure_json jsonb,
+  delivery_terms_json jsonb,
+  cancellation_terms_json jsonb,
+
+  constraint chk_need_threshold
+    check (
+      (threshold_qty is null or threshold_qty >= 0)
+      and (threshold_value is null or threshold_value >= 0)
+    )
+);
+
+-- ---------------------------------------------------------------------
+-- feed_campaigns (typed extension)
+-- ---------------------------------------------------------------------
+create table if not exists public.feed_campaigns (
+  campaign_id uuid primary key references public.campaigns(id) on delete cascade,
+  bid_deadline_at timestamptz,
+  award_method text,                   -- lowest_price/best_value/weighted/etc.
+  eligibility_rules_json jsonb,
+  compliance_requirements_json jsonb
+);
+
+-- ---------------------------------------------------------------------
+-- campaign_items
+-- ---------------------------------------------------------------------
+create table if not exists public.campaign_items (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references public.campaigns(id) on delete cascade,
+  item_code text,
+  title text not null,
+  description text,
+  unit text,                           -- sqm, unit, kg, hour, etc.
+  variant_json jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- need_pledges / need_pledge_rows
+-- ---------------------------------------------------------------------
+create table if not exists public.need_pledges (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references public.campaigns(id) on delete cascade,
+  backer_id uuid not null references public.users(id),
+  status text not null default 'active',  -- active/withdrawn (deed is the real bind)
+  created_at timestamptz not null default now(),
+  unique (campaign_id, backer_id)
+);
+
+create table if not exists public.need_pledge_rows (
+  id uuid primary key default gen_random_uuid(),
+  pledge_id uuid not null references public.need_pledges(id) on delete cascade,
+  campaign_item_id uuid not null references public.campaign_items(id),
+  quantity numeric not null check (quantity > 0),
+  constraints_json jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- supplier_offers / supplier_offer_rows
+-- ---------------------------------------------------------------------
+create table if not exists public.supplier_offers (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references public.campaigns(id) on delete cascade,
+  supplier_id uuid not null references public.users(id),
+  status public.offer_status not null default 'draft',
+  terms_json jsonb,
+  created_at timestamptz not null default now(),
+  submitted_at timestamptz,
+  unique (campaign_id, supplier_id)
+);
+
+create table if not exists public.supplier_offer_rows (
+  id uuid primary key default gen_random_uuid(),
+  offer_id uuid not null references public.supplier_offers(id) on delete cascade,
+  campaign_item_id uuid not null references public.campaign_items(id),
+  unit_price numeric not null check (unit_price >= 0),
+  min_qty numeric check (min_qty is null or min_qty >= 0),
+  lead_time_days integer check (lead_time_days is null or lead_time_days >= 0),
+  notes text,
+  terms_json jsonb
+);
+
+-- ---------------------------------------------------------------------
+-- deeds (versioned legal artifacts) + deed_signers
+-- ---------------------------------------------------------------------
+create table if not exists public.deeds (
+  id uuid primary key default gen_random_uuid(),
+  deed_kind public.deed_kind not null,
+  status public.deed_status not null default 'draft',
+  campaign_id uuid references public.campaigns(id) on delete set null,
+  version integer not null default 1,
+  prev_deed_id uuid references public.deeds(id) on delete set null,
+  doc_json jsonb not null,
+  doc_hash text not null,
+  pdf_url text,
+  created_by uuid references public.users(id),
+  created_at timestamptz not null default now(),
+  opened_for_signature_at timestamptz,
+  executed_at timestamptz,
+
+  constraint chk_deed_version_positive check (version >= 1),
+
+  constraint chk_deed_open_time
+    check (
+      (status <> 'open_for_signature') or (opened_for_signature_at is not null)
+    ),
+
+  constraint chk_deed_executed_time
+    check (
+      (status not in ('executed','active','fulfilled')) or (executed_at is not null)
+    ),
+
+  constraint uq_deed_version_per_campaign
+    unique (campaign_id, deed_kind, version)
+);
+
+create table if not exists public.deed_signers (
+  id uuid primary key default gen_random_uuid(),
+  deed_id uuid not null references public.deeds(id) on delete cascade,
+  user_id uuid not null references public.users(id),
+  signer_kind text not null,           -- backer/supplier/initiator/platform
+  status text not null default 'invited', -- invited/signed/declined
+  signed_at timestamptz,
+  signature_meta_json jsonb,
+  created_at timestamptz not null default now(),
+  unique (deed_id, user_id)
+);
+
+-- ---------------------------------------------------------------------
+-- assignments (Reed) + assignment_need_deeds
+-- ---------------------------------------------------------------------
+create table if not exists public.assignments (
+  id uuid primary key default gen_random_uuid(),
+  campaign_need_id uuid references public.campaigns(id) on delete set null,
+  campaign_feed_id uuid references public.campaigns(id) on delete set null,
+  selected_offer_id uuid references public.supplier_offers(id) on delete set null,
+  assignment_deed_id uuid references public.deeds(id) on delete set null,
+  status public.assignment_status not null default 'draft',
+  created_at timestamptz not null default now(),
+  executed_at timestamptz
+);
+
+create table if not exists public.assignment_need_deeds (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references public.assignments(id) on delete cascade,
+  need_deed_id uuid not null references public.deeds(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  unique (assignment_id, need_deed_id)
+);
+
+-- ---------------------------------------------------------------------
+-- fulfillment
+-- ---------------------------------------------------------------------
+create table if not exists public.fulfillment_milestones (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references public.assignments(id) on delete cascade,
+  title text not null,
+  due_at timestamptz,
+  status public.fulfillment_status not null default 'pending',
+  metadata_json jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_fulfillment_milestones_updated_at on public.fulfillment_milestones;
+create trigger trg_fulfillment_milestones_updated_at
+before update on public.fulfillment_milestones
+for each row execute function public.set_updated_at();
+
+create table if not exists public.fulfillment_events (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references public.assignments(id) on delete cascade,
+  actor_user_id uuid references public.users(id),
+  event_type text not null,            -- shipped/delivered/accepted/failed/etc.
+  payload_json jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------
+-- participations (contextual roles)
+-- ---------------------------------------------------------------------
+create table if not exists public.participations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  context_type text not null,          -- campaign/deed/assignment/group
+  context_id uuid not null,
+  participation_kind public.participation_kind not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, context_type, context_id, participation_kind)
+);
+
+-- ---------------------------------------------------------------------
+-- governance: audit_logs, disputes, notifications
+-- ---------------------------------------------------------------------
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_user_id uuid references public.users(id),
+  action text not null,
+  entity_type text not null,
+  entity_id uuid not null,
+  payload_json jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.disputes (
+  id uuid primary key default gen_random_uuid(),
+  context_type text not null,
+  context_id uuid not null,
+  opened_by uuid references public.users(id),
+  reason text,
+  status text not null default 'open', -- open/in_review/resolved/closed
+  resolution_json jsonb,
+  created_at timestamptz not null default now(),
+  closed_at timestamptz
+);
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  kind text not null,
+  context_type text,
+  context_id uuid,
+  payload_json jsonb,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- =====================================================================
+-- INDEXES
+-- =====================================================================
+
+create index if not exists idx_users_email on public.users (email);
+create index if not exists idx_users_phone on public.users (phone);
+
+create index if not exists idx_groups_owner on public.groups (owner_id);
+create index if not exists idx_group_members_group on public.group_members (group_id);
+create index if not exists idx_group_members_user on public.group_members (user_id);
+
+create index if not exists idx_campaigns_kind on public.campaigns (kind);
+create index if not exists idx_campaigns_created_by on public.campaigns (created_by);
+create index if not exists idx_campaigns_group on public.campaigns (group_id);
+create index if not exists idx_campaigns_visibility on public.campaigns (visibility);
+create index if not exists idx_campaigns_status_need on public.campaigns (status_need);
+create index if not exists idx_campaigns_status_feed on public.campaigns (status_feed);
+
+create index if not exists idx_campaign_items_campaign on public.campaign_items (campaign_id);
+
+create index if not exists idx_need_pledges_campaign on public.need_pledges (campaign_id);
+create index if not exists idx_need_pledges_backer on public.need_pledges (backer_id);
+create index if not exists idx_need_pledge_rows_pledge on public.need_pledge_rows (pledge_id);
+create index if not exists idx_need_pledge_rows_item on public.need_pledge_rows (campaign_item_id);
+
+create index if not exists idx_supplier_offers_campaign on public.supplier_offers (campaign_id);
+create index if not exists idx_supplier_offers_supplier on public.supplier_offers (supplier_id);
+create index if not exists idx_supplier_offer_rows_offer on public.supplier_offer_rows (offer_id);
+create index if not exists idx_supplier_offer_rows_item on public.supplier_offer_rows (campaign_item_id);
+
+create index if not exists idx_deeds_campaign on public.deeds (campaign_id);
+create index if not exists idx_deeds_kind_status on public.deeds (deed_kind, status);
+create index if not exists idx_deeds_created_by on public.deeds (created_by);
+create index if not exists idx_deed_signers_deed on public.deed_signers (deed_id);
+create index if not exists idx_deed_signers_user on public.deed_signers (user_id);
+
+create index if not exists idx_assignments_need_campaign on public.assignments (campaign_need_id);
+create index if not exists idx_assignments_feed_campaign on public.assignments (campaign_feed_id);
+create index if not exists idx_assignments_selected_offer on public.assignments (selected_offer_id);
+create index if not exists idx_assignment_need_deeds_assignment on public.assignment_need_deeds (assignment_id);
+create index if not exists idx_assignment_need_deeds_need_deed on public.assignment_need_deeds (need_deed_id);
+
+create index if not exists idx_fulfillment_milestones_assignment on public.fulfillment_milestones (assignment_id);
+create index if not exists idx_fulfillment_events_assignment on public.fulfillment_events (assignment_id);
+
+create index if not exists idx_participations_user on public.participations (user_id);
+create index if not exists idx_participations_context on public.participations (context_type, context_id);
+
+create index if not exists idx_audit_logs_actor on public.audit_logs (actor_user_id);
+create index if not exists idx_audit_logs_entity on public.audit_logs (entity_type, entity_id);
+create index if not exists idx_disputes_context on public.disputes (context_type, context_id);
+create index if not exists idx_notifications_user on public.notifications (user_id);
+
+-- =====================================================================
+-- ROW LEVEL SECURITY (RLS)
+-- =====================================================================
+
+alter table public.users enable row level security;
+alter table public.user_verifications enable row level security;
+alter table public.platform_permissions enable row level security;
+
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
+
+alter table public.campaigns enable row level security;
+alter table public.need_campaigns enable row level security;
+alter table public.feed_campaigns enable row level security;
+alter table public.campaign_items enable row level security;
+
+alter table public.need_pledges enable row level security;
+alter table public.need_pledge_rows enable row level security;
+
+alter table public.supplier_offers enable row level security;
+alter table public.supplier_offer_rows enable row level security;
+
+alter table public.deeds enable row level security;
+alter table public.deed_signers enable row level security;
+
+alter table public.assignments enable row level security;
+alter table public.assignment_need_deeds enable row level security;
+
+alter table public.fulfillment_milestones enable row level security;
+alter table public.fulfillment_events enable row level security;
+
+alter table public.participations enable row level security;
+
+alter table public.audit_logs enable row level security;
+alter table public.disputes enable row level security;
+alter table public.notifications enable row level security;
+
+-- USERS
+drop policy if exists "users_select_own" on public.users;
+create policy "users_select_own"
+on public.users for select
+to authenticated
+using (id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "users_insert_self" on public.users;
+create policy "users_insert_self"
+on public.users for insert
+to authenticated
+with check (id = auth.uid());
+
+drop policy if exists "users_update_own" on public.users;
+create policy "users_update_own"
+on public.users for update
+to authenticated
+using (id = auth.uid() or public.is_platform_admin())
+with check (id = auth.uid() or public.is_platform_admin());
+
+-- USER_VERIFICATIONS
+drop policy if exists "verifications_select_own" on public.user_verifications;
+create policy "verifications_select_own"
+on public.user_verifications for select
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "verifications_insert_own" on public.user_verifications;
+create policy "verifications_insert_own"
+on public.user_verifications for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists "verifications_update_admin" on public.user_verifications;
+create policy "verifications_update_admin"
+on public.user_verifications for update
+to authenticated
+using (public.is_platform_admin())
+with check (public.is_platform_admin());
+
+-- PLATFORM_PERMISSIONS (admin-only)
+drop policy if exists "platform_permissions_admin_only" on public.platform_permissions;
+create policy "platform_permissions_admin_only"
+on public.platform_permissions for all
+to authenticated
+using (public.is_platform_admin())
+with check (public.is_platform_admin());
+
+-- GROUPS
+drop policy if exists "groups_select_visible_or_member" on public.groups;
+create policy "groups_select_visible_or_member"
+on public.groups for select
+to authenticated
+using (
+  visibility <> 'private'
+  or owner_id = auth.uid()
+  or exists (
+    select 1 from public.group_members gm
+    where gm.group_id = groups.id and gm.user_id = auth.uid()
+  )
+  or public.is_platform_admin()
+);
+
+drop policy if exists "groups_insert_owner" on public.groups;
+create policy "groups_insert_owner"
+on public.groups for insert
+to authenticated
+with check (owner_id = auth.uid());
+
+drop policy if exists "groups_update_owner_or_admin" on public.groups;
+create policy "groups_update_owner_or_admin"
+on public.groups for update
+to authenticated
+using (owner_id = auth.uid() or public.is_platform_admin())
+with check (owner_id = auth.uid() or public.is_platform_admin());
+
+-- GROUP_MEMBERS
+drop policy if exists "group_members_select_member" on public.group_members;
+create policy "group_members_select_member"
+on public.group_members for select
+to authenticated
+using (
+  user_id = auth.uid()
+  or exists (
+    select 1 from public.groups g
+    where g.id = group_members.group_id and (g.owner_id = auth.uid() or public.is_platform_admin())
+  )
+);
+
+drop policy if exists "group_members_insert_owner_or_admin" on public.group_members;
+create policy "group_members_insert_owner_or_admin"
+on public.group_members for insert
+to authenticated
+with check (
+  public.is_platform_admin()
+  or exists (select 1 from public.groups g where g.id = group_members.group_id and g.owner_id = auth.uid())
+);
+
+drop policy if exists "group_members_delete_owner_or_admin" on public.group_members;
+create policy "group_members_delete_owner_or_admin"
+on public.group_members for delete
+to authenticated
+using (
+  public.is_platform_admin()
+  or exists (select 1 from public.groups g where g.id = group_members.group_id and g.owner_id = auth.uid())
+);
+
+-- CAMPAIGNS
+drop policy if exists "campaigns_select_public_or_member" on public.campaigns;
+create policy "campaigns_select_public_or_member"
+on public.campaigns for select
+to authenticated
+using (
+  visibility in ('public','unlisted')
+  or created_by = auth.uid()
+  or public.is_platform_admin()
+  or (
+    visibility = 'private'
+    and group_id is not null
+    and exists (
+      select 1 from public.group_members gm
+      where gm.group_id = campaigns.group_id and gm.user_id = auth.uid()
+    )
+  )
+);
+
+drop policy if exists "campaigns_insert_creator" on public.campaigns;
+create policy "campaigns_insert_creator"
+on public.campaigns for insert
+to authenticated
+with check (created_by = auth.uid());
+
+drop policy if exists "campaigns_update_creator_or_admin" on public.campaigns;
+create policy "campaigns_update_creator_or_admin"
+on public.campaigns for update
+to authenticated
+using (created_by = auth.uid() or public.is_platform_admin())
+with check (created_by = auth.uid() or public.is_platform_admin());
+
+-- NEED_CAMPAIGNS
+drop policy if exists "need_campaigns_select" on public.need_campaigns;
+create policy "need_campaigns_select"
+on public.need_campaigns for select
+to authenticated
+using (
+  exists (
+    select 1 from public.campaigns c
+    where c.id = need_campaigns.campaign_id
+      and (
+        c.visibility in ('public','unlisted')
+        or c.created_by = auth.uid()
+        or public.is_platform_admin()
+        or (
+          c.visibility = 'private'
+          and c.group_id is not null
+          and exists (
+            select 1 from public.group_members gm
+            where gm.group_id = c.group_id and gm.user_id = auth.uid()
+          )
+        )
+      )
+  )
+);
+
+drop policy if exists "need_campaigns_insert_creator_or_admin" on public.need_campaigns;
+create policy "need_campaigns_insert_creator_or_admin"
+on public.need_campaigns for insert
+to authenticated
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+drop policy if exists "need_campaigns_update_creator_or_admin" on public.need_campaigns;
+create policy "need_campaigns_update_creator_or_admin"
+on public.need_campaigns for update
+to authenticated
+using (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+)
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+-- FEED_CAMPAIGNS
+drop policy if exists "feed_campaigns_select" on public.feed_campaigns;
+create policy "feed_campaigns_select"
+on public.feed_campaigns for select
+to authenticated
+using (
+  exists (
+    select 1 from public.campaigns c
+    where c.id = feed_campaigns.campaign_id
+      and (
+        c.visibility in ('public','unlisted')
+        or c.created_by = auth.uid()
+        or public.is_platform_admin()
+        or (
+          c.visibility = 'private'
+          and c.group_id is not null
+          and exists (
+            select 1 from public.group_members gm
+            where gm.group_id = c.group_id and gm.user_id = auth.uid()
+          )
+        )
+      )
+  )
+);
+
+drop policy if exists "feed_campaigns_insert_creator_or_admin" on public.feed_campaigns;
+create policy "feed_campaigns_insert_creator_or_admin"
+on public.feed_campaigns for insert
+to authenticated
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+drop policy if exists "feed_campaigns_update_creator_or_admin" on public.feed_campaigns;
+create policy "feed_campaigns_update_creator_or_admin"
+on public.feed_campaigns for update
+to authenticated
+using (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+)
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+-- CAMPAIGN_ITEMS
+drop policy if exists "campaign_items_select" on public.campaign_items;
+create policy "campaign_items_select"
+on public.campaign_items for select
+to authenticated
+using (
+  exists (
+    select 1 from public.campaigns c
+    where c.id = campaign_items.campaign_id
+      and (
+        c.visibility in ('public','unlisted')
+        or c.created_by = auth.uid()
+        or public.is_platform_admin()
+        or (
+          c.visibility = 'private'
+          and c.group_id is not null
+          and exists (
+            select 1 from public.group_members gm
+            where gm.group_id = c.group_id and gm.user_id = auth.uid()
+          )
+        )
+      )
+  )
+);
+
+drop policy if exists "campaign_items_insert_creator_or_admin" on public.campaign_items;
+create policy "campaign_items_insert_creator_or_admin"
+on public.campaign_items for insert
+to authenticated
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+drop policy if exists "campaign_items_update_creator_or_admin" on public.campaign_items;
+create policy "campaign_items_update_creator_or_admin"
+on public.campaign_items for update
+to authenticated
+using (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+)
+with check (
+  exists (select 1 from public.campaigns c where c.id = campaign_id and (c.created_by = auth.uid() or public.is_platform_admin()))
+);
+
+-- NEED_PLEDGES
+drop policy if exists "need_pledges_select_backer_or_creator" on public.need_pledges;
+create policy "need_pledges_select_backer_or_creator"
+on public.need_pledges for select
+to authenticated
+using (
+  backer_id = auth.uid()
+  or public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = need_pledges.campaign_id and c.created_by = auth.uid())
+);
+
+drop policy if exists "need_pledges_insert_backer" on public.need_pledges;
+create policy "need_pledges_insert_backer"
+on public.need_pledges for insert
+to authenticated
+with check (backer_id = auth.uid());
+
+drop policy if exists "need_pledges_update_backer_or_admin" on public.need_pledges;
+create policy "need_pledges_update_backer_or_admin"
+on public.need_pledges for update
+to authenticated
+using (backer_id = auth.uid() or public.is_platform_admin())
+with check (backer_id = auth.uid() or public.is_platform_admin());
+
+-- NEED_PLEDGE_ROWS
+drop policy if exists "need_pledge_rows_select_backer_or_creator" on public.need_pledge_rows;
+create policy "need_pledge_rows_select_backer_or_creator"
+on public.need_pledge_rows for select
+to authenticated
+using (
+  exists (
+    select 1 from public.need_pledges p
+    join public.campaigns c on c.id = p.campaign_id
+    where p.id = need_pledge_rows.pledge_id
+      and (p.backer_id = auth.uid() or c.created_by = auth.uid() or public.is_platform_admin())
+  )
+);
+
+drop policy if exists "need_pledge_rows_insert_backer" on public.need_pledge_rows;
+create policy "need_pledge_rows_insert_backer"
+on public.need_pledge_rows for insert
+to authenticated
+with check (
+  exists (select 1 from public.need_pledges p where p.id = pledge_id and p.backer_id = auth.uid())
+);
+
+drop policy if exists "need_pledge_rows_update_backer_or_admin" on public.need_pledge_rows;
+create policy "need_pledge_rows_update_backer_or_admin"
+on public.need_pledge_rows for update
+to authenticated
+using (
+  exists (select 1 from public.need_pledges p where p.id = pledge_id and p.backer_id = auth.uid())
+  or public.is_platform_admin()
+)
+with check (
+  exists (select 1 from public.need_pledges p where p.id = pledge_id and p.backer_id = auth.uid())
+  or public.is_platform_admin()
+);
+
+-- SUPPLIER_OFFERS
+drop policy if exists "supplier_offers_select_supplier_or_creator" on public.supplier_offers;
+create policy "supplier_offers_select_supplier_or_creator"
+on public.supplier_offers for select
+to authenticated
+using (
+  supplier_id = auth.uid()
+  or public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = supplier_offers.campaign_id and c.created_by = auth.uid())
+);
+
+drop policy if exists "supplier_offers_insert_supplier" on public.supplier_offers;
+create policy "supplier_offers_insert_supplier"
+on public.supplier_offers for insert
+to authenticated
+with check (supplier_id = auth.uid());
+
+drop policy if exists "supplier_offers_update_supplier_or_admin" on public.supplier_offers;
+create policy "supplier_offers_update_supplier_or_admin"
+on public.supplier_offers for update
+to authenticated
+using (supplier_id = auth.uid() or public.is_platform_admin())
+with check (supplier_id = auth.uid() or public.is_platform_admin());
+
+-- SUPPLIER_OFFER_ROWS
+drop policy if exists "supplier_offer_rows_select_supplier_or_creator" on public.supplier_offer_rows;
+create policy "supplier_offer_rows_select_supplier_or_creator"
+on public.supplier_offer_rows for select
+to authenticated
+using (
+  exists (
+    select 1 from public.supplier_offers o
+    join public.campaigns c on c.id = o.campaign_id
+    where o.id = supplier_offer_rows.offer_id
+      and (o.supplier_id = auth.uid() or c.created_by = auth.uid() or public.is_platform_admin())
+  )
+);
+
+drop policy if exists "supplier_offer_rows_insert_supplier" on public.supplier_offer_rows;
+create policy "supplier_offer_rows_insert_supplier"
+on public.supplier_offer_rows for insert
+to authenticated
+with check (
+  exists (select 1 from public.supplier_offers o where o.id = offer_id and o.supplier_id = auth.uid())
+);
+
+drop policy if exists "supplier_offer_rows_update_supplier_or_admin" on public.supplier_offer_rows;
+create policy "supplier_offer_rows_update_supplier_or_admin"
+on public.supplier_offer_rows for update
+to authenticated
+using (
+  exists (select 1 from public.supplier_offers o where o.id = offer_id and o.supplier_id = auth.uid())
+  or public.is_platform_admin()
+)
+with check (
+  exists (select 1 from public.supplier_offers o where o.id = offer_id and o.supplier_id = auth.uid())
+  or public.is_platform_admin()
+);
+
+-- DEEDS
+drop policy if exists "deeds_select_participant_or_creator" on public.deeds;
+create policy "deeds_select_participant_or_creator"
+on public.deeds for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or created_by = auth.uid()
+  or exists (select 1 from public.deed_signers ds where ds.deed_id = deeds.id and ds.user_id = auth.uid())
+  or exists (select 1 from public.campaigns c where c.id = deeds.campaign_id and c.created_by = auth.uid())
+);
+
+drop policy if exists "deeds_insert_creator_or_admin" on public.deeds;
+create policy "deeds_insert_creator_or_admin"
+on public.deeds for insert
+to authenticated
+with check (created_by = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "deeds_update_creator_or_admin" on public.deeds;
+create policy "deeds_update_creator_or_admin"
+on public.deeds for update
+to authenticated
+using (created_by = auth.uid() or public.is_platform_admin())
+with check (created_by = auth.uid() or public.is_platform_admin());
+
+-- DEED_SIGNERS
+drop policy if exists "deed_signers_select_visible_to_deed_viewers" on public.deed_signers;
+create policy "deed_signers_select_visible_to_deed_viewers"
+on public.deed_signers for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or user_id = auth.uid()
+  or exists (
+    select 1 from public.deeds d
+    where d.id = deed_signers.deed_id
+      and (
+        d.created_by = auth.uid()
+        or exists (select 1 from public.deed_signers ds2 where ds2.deed_id = d.id and ds2.user_id = auth.uid())
+      )
+  )
+);
+
+drop policy if exists "deed_signers_insert_creator_or_admin" on public.deed_signers;
+create policy "deed_signers_insert_creator_or_admin"
+on public.deed_signers for insert
+to authenticated
+with check (
+  public.is_platform_admin()
+  or exists (select 1 from public.deeds d where d.id = deed_id and d.created_by = auth.uid())
+);
+
+drop policy if exists "deed_signers_update_self" on public.deed_signers;
+create policy "deed_signers_update_self"
+on public.deed_signers for update
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin())
+with check (user_id = auth.uid() or public.is_platform_admin());
+
+-- ASSIGNMENTS
+drop policy if exists "assignments_select_involved" on public.assignments;
+create policy "assignments_select_involved"
+on public.assignments for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = assignments.campaign_need_id and c.created_by = auth.uid())
+  or exists (select 1 from public.supplier_offers o where o.id = assignments.selected_offer_id and o.supplier_id = auth.uid())
+  or exists (
+    select 1
+    from public.assignment_need_deeds ands
+    join public.deed_signers ds on ds.deed_id = ands.need_deed_id
+    where ands.assignment_id = assignments.id and ds.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "assignments_insert_creator_or_admin" on public.assignments;
+create policy "assignments_insert_creator_or_admin"
+on public.assignments for insert
+to authenticated
+with check (
+  public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = campaign_need_id and c.created_by = auth.uid())
+);
+
+drop policy if exists "assignments_update_creator_or_admin" on public.assignments;
+create policy "assignments_update_creator_or_admin"
+on public.assignments for update
+to authenticated
+using (
+  public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = campaign_need_id and c.created_by = auth.uid())
+)
+with check (
+  public.is_platform_admin()
+  or exists (select 1 from public.campaigns c where c.id = campaign_need_id and c.created_by = auth.uid())
+);
+
+-- ASSIGNMENT_NEED_DEEDS
+drop policy if exists "assignment_need_deeds_select_involved" on public.assignment_need_deeds;
+create policy "assignment_need_deeds_select_involved"
+on public.assignment_need_deeds for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or exists (select 1 from public.deed_signers ds where ds.deed_id = assignment_need_deeds.need_deed_id and ds.user_id = auth.uid())
+  or exists (
+    select 1 from public.assignments a
+    join public.campaigns c on c.id = a.campaign_need_id
+    where a.id = assignment_need_deeds.assignment_id and c.created_by = auth.uid()
+  )
+  or exists (
+    select 1 from public.assignments a
+    join public.supplier_offers o on o.id = a.selected_offer_id
+    where a.id = assignment_need_deeds.assignment_id and o.supplier_id = auth.uid()
+  )
+);
+
+drop policy if exists "assignment_need_deeds_insert_creator_or_admin" on public.assignment_need_deeds;
+create policy "assignment_need_deeds_insert_creator_or_admin"
+on public.assignment_need_deeds for insert
+to authenticated
+with check (
+  public.is_platform_admin()
+  or exists (
+    select 1 from public.assignments a
+    join public.campaigns c on c.id = a.campaign_need_id
+    where a.id = assignment_id and c.created_by = auth.uid()
+  )
+);
+
+-- FULFILLMENT
+drop policy if exists "fulfillment_milestones_select_involved" on public.fulfillment_milestones;
+create policy "fulfillment_milestones_select_involved"
+on public.fulfillment_milestones for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or exists (
+    select 1 from public.assignments a
+    where a.id = fulfillment_milestones.assignment_id
+      and (
+        exists (select 1 from public.campaigns c where c.id = a.campaign_need_id and c.created_by = auth.uid())
+        or exists (select 1 from public.supplier_offers o where o.id = a.selected_offer_id and o.supplier_id = auth.uid())
+        or exists (
+          select 1 from public.assignment_need_deeds ands
+          join public.deed_signers ds on ds.deed_id = ands.need_deed_id
+          where ands.assignment_id = a.id and ds.user_id = auth.uid()
+        )
+      )
+  )
+);
+
+-- Writes are admin-only in this starter schema (tighten later with supplier/initiator rules)
+drop policy if exists "fulfillment_milestones_write_admin" on public.fulfillment_milestones;
+create policy "fulfillment_milestones_write_admin"
+on public.fulfillment_milestones for insert
+to authenticated
+with check (public.is_platform_admin());
+
+drop policy if exists "fulfillment_milestones_update_admin" on public.fulfillment_milestones;
+create policy "fulfillment_milestones_update_admin"
+on public.fulfillment_milestones for update
+to authenticated
+using (public.is_platform_admin())
+with check (public.is_platform_admin());
+
+drop policy if exists "fulfillment_events_select_involved" on public.fulfillment_events;
+create policy "fulfillment_events_select_involved"
+on public.fulfillment_events for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or actor_user_id = auth.uid()
+  or exists (
+    select 1 from public.assignments a
+    where a.id = fulfillment_events.assignment_id
+      and (
+        exists (select 1 from public.campaigns c where c.id = a.campaign_need_id and c.created_by = auth.uid())
+        or exists (select 1 from public.supplier_offers o where o.id = a.selected_offer_id and o.supplier_id = auth.uid())
+        or exists (
+          select 1 from public.assignment_need_deeds ands
+          join public.deed_signers ds on ds.deed_id = ands.need_deed_id
+          where ands.assignment_id = a.id and ds.user_id = auth.uid()
+        )
+      )
+  )
+);
+
+drop policy if exists "fulfillment_events_insert_actor_or_admin" on public.fulfillment_events;
+create policy "fulfillment_events_insert_actor_or_admin"
+on public.fulfillment_events for insert
+to authenticated
+with check (actor_user_id = auth.uid() or public.is_platform_admin());
+
+-- PARTICIPATIONS
+drop policy if exists "participations_select_own" on public.participations;
+create policy "participations_select_own"
+on public.participations for select
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "participations_insert_own" on public.participations;
+create policy "participations_insert_own"
+on public.participations for insert
+to authenticated
+with check (user_id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "participations_delete_own" on public.participations;
+create policy "participations_delete_own"
+on public.participations for delete
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin());
+
+-- AUDIT_LOGS (admin-only)
+drop policy if exists "audit_logs_admin_select" on public.audit_logs;
+create policy "audit_logs_admin_select"
+on public.audit_logs for select
+to authenticated
+using (public.is_platform_admin());
+
+drop policy if exists "audit_logs_admin_insert" on public.audit_logs;
+create policy "audit_logs_admin_insert"
+on public.audit_logs for insert
+to authenticated
+with check (public.is_platform_admin());
+
+-- DISPUTES
+drop policy if exists "disputes_select_involved_or_admin" on public.disputes;
+create policy "disputes_select_involved_or_admin"
+on public.disputes for select
+to authenticated
+using (
+  public.is_platform_admin()
+  or opened_by = auth.uid()
+  or exists (
+    select 1 from public.deed_signers ds
+    where disputes.context_type = 'deed'
+      and ds.deed_id = disputes.context_id
+      and ds.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "disputes_insert_self" on public.disputes;
+create policy "disputes_insert_self"
+on public.disputes for insert
+to authenticated
+with check (opened_by = auth.uid());
+
+drop policy if exists "disputes_update_admin" on public.disputes;
+create policy "disputes_update_admin"
+on public.disputes for update
+to authenticated
+using (public.is_platform_admin())
+with check (public.is_platform_admin());
+
+-- NOTIFICATIONS
+drop policy if exists "notifications_select_own" on public.notifications;
+create policy "notifications_select_own"
+on public.notifications for select
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "notifications_update_own" on public.notifications;
+create policy "notifications_update_own"
+on public.notifications for update
+to authenticated
+using (user_id = auth.uid() or public.is_platform_admin())
+with check (user_id = auth.uid() or public.is_platform_admin());
+
+drop policy if exists "notifications_insert_admin" on public.notifications;
+create policy "notifications_insert_admin"
+on public.notifications for insert
+to authenticated
+with check (public.is_platform_admin());
+
+-- =====================================================================
+-- END
+-- =====================================================================

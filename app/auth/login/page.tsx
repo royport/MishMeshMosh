@@ -1,0 +1,55 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { LoginForm } from '@/components/auth/login-form';
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description: 'Sign in to your MishMeshMosh account.',
+};
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Back to home link */}
+      <div className="absolute top-4 left-4">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <Link href="/" className="flex justify-center">
+          <img
+            src="/mishmeshmosh_black.png"
+            alt="MishMeshMosh"
+            className="h-12"
+          />
+        </Link>
+        <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-neutral-600">
+          Don&apos;t have an account?{' '}
+          <Link
+            href="/auth/signup"
+            className="font-medium text-primary-600 hover:text-primary-500"
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-sm sm:rounded-lg sm:px-10 border border-neutral-200">
+          <LoginForm />
+        </div>
+      </div>
+    </div>
+  );
+}

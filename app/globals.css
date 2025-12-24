@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-deed {
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid;
+  }
+
+  .print-deed section {
+    page-break-inside: avoid;
+  }
+
+  .print-deed h1,
+  .print-deed h2,
+  .print-deed h3 {
+    page-break-after: avoid;
+  }
+
+  .print-deed table {
+    page-break-inside: auto;
+  }
+
+  .print-deed tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-deed a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .print-deed a[href]:after {
+    content: none;
+  }
+}
