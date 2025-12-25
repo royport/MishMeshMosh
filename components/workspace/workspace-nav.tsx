@@ -6,6 +6,8 @@ import { useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
+import Image from "next/image";
+
 
 interface WorkspaceNavProps {
   user: User;
@@ -45,11 +47,14 @@ export function WorkspaceNav({ user }: WorkspaceNavProps) {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <img
-                src="/mishmeshmosh_black.png"
-                alt="MishMeshMosh"
-                className="h-10"
-              />
+                    <Image
+                      src="/mishmeshmosh_black.png"
+                      alt="MishMeshMosh"
+                      width={160}
+                      height={40}
+                      className="h-10 w-auto"
+                      priority
+                    />
             </Link>
             <div className="hidden md:ml-10 md:flex md:space-x-8">
               {navItems.map((item) => (

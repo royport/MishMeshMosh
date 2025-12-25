@@ -1,4 +1,6 @@
 'use client';
+import Image from "next/image";
+
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -25,10 +27,14 @@ export function AppHeader() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <img
+
+             <Image
                 src="/mishmeshmosh_black.png"
                 alt="MishMeshMosh"
+                width={160}
+                height={40}
                 className="h-10"
+                priority
               />
             </Link>
           </div>

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from "next/image";
+
 
 export function SiteFooter() {
   return (
@@ -6,8 +8,15 @@ export function SiteFooter() {
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-1">
-            <img src="/mishmeshmosh_black.png" alt="MishMeshMosh" className="h-10 brightness-0 invert mb-4" />
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <Image
+              src="/mishmeshmosh_black.png"
+              alt="MishMeshMosh"
+              width={160}
+              height={40}
+              className="h-10 w-auto brightness-0 invert mb-4"
+              priority
+            />
+          <p className="text-slate-400 text-sm leading-relaxed">
               Turning shared needs into supplier-ready deals through digital deeds.
             </p>
           </div>

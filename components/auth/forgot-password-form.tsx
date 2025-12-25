@@ -42,7 +42,7 @@ export function ForgotPasswordForm() {
         </div>
         <h3 className="text-lg font-semibold text-neutral-900 mb-2">Check your email</h3>
         <p className="text-neutral-600 mb-6">
-          We've sent a password reset link to <strong>{email}</strong>
+          We&apos;ve sent a password reset link to <strong>{email}</strong>
         </p>
         <Link
           href="/auth/login"

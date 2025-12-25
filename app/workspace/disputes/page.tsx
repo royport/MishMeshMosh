@@ -38,7 +38,7 @@ export default async function DisputesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">My Disputes</h1>
         <p className="text-slate-600 mt-1">
-          Track and manage disputes you've filed
+          Track and manage disputes you&apos;ve filed
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export default async function DisputesPage() {
           </svg>
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No disputes</h3>
           <p className="text-slate-600">
-            You haven't filed any disputes. Hopefully it stays that way!
+            You haven&apos;t filed any disputes. Hopefully it stays that way!
           </p>
         </div>
       ) : (

@@ -22,7 +22,7 @@ export default function HowItWorksPage() {
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-5xl">
             <h2 className="text-3xl font-bold text-slate-900 text-center mb-16">The 4-Phase Lifecycle</h2>
-            
+
             <div className="space-y-12">
               {/* NEED Phase */}
               <div className="flex flex-col md:flex-row gap-8 items-start bg-white rounded-2xl p-8 shadow-lg border border-slate-100">
@@ -35,8 +35,8 @@ export default function HowItWorksPage() {
                     <h3 className="text-2xl font-bold text-slate-900">NEED</h3>
                   </div>
                   <p className="text-slate-600 mb-4">
-                    Anyone can create a campaign expressing a need. Define what you want, set minimum thresholds, 
-                    and establish terms. Backers join by signing a <strong>Need Deed</strong> — a digital commitment 
+                    Anyone can create a campaign expressing a need. Define what you want, set minimum thresholds,
+                    and establish terms. Backers join by signing a <strong>Need Deed</strong> — a digital commitment
                     that documents their intent without requiring upfront payment.
                   </p>
                   <ul className="list-disc list-inside text-slate-500 space-y-1 text-sm">
@@ -59,7 +59,7 @@ export default function HowItWorksPage() {
                     <h3 className="text-2xl font-bold text-slate-900">SEED</h3>
                   </div>
                   <p className="text-slate-600 mb-4">
-                    When the campaign reaches its threshold, the need is validated and "seeded." The platform 
+                    When the campaign reaches its threshold, the need is validated and &quot;seeded.&quot; The platform
                     aggregates all commitments into a clear package that suppliers can understand and bid on.
                   </p>
                   <ul className="list-disc list-inside text-slate-500 space-y-1 text-sm">
@@ -82,7 +82,7 @@ export default function HowItWorksPage() {
                     <h3 className="text-2xl font-bold text-slate-900">FEED</h3>
                   </div>
                   <p className="text-slate-600 mb-4">
-                    Suppliers compete to fulfill the aggregated need. They submit <strong>Feed Deeds</strong> — 
+                    Suppliers compete to fulfill the aggregated need. They submit <strong>Feed Deeds</strong> —
                     binding offers that specify pricing, delivery terms, and fulfillment guarantees.
                   </p>
                   <ul className="list-disc list-inside text-slate-500 space-y-1 text-sm">
@@ -105,7 +105,7 @@ export default function HowItWorksPage() {
                     <h3 className="text-2xl font-bold text-slate-900">REED</h3>
                   </div>
                   <p className="text-slate-600 mb-4">
-                    The assignment is made official through a <strong>Reed Deed</strong> — a multi-party contract 
+                    The assignment is made official through a <strong>Reed Deed</strong> — a multi-party contract
                     that links backers to the selected supplier. Fulfillment is tracked through milestones until completion.
                   </p>
                   <ul className="list-disc list-inside text-slate-500 space-y-1 text-sm">

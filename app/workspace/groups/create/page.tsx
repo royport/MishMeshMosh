@@ -109,7 +109,7 @@ export default function CreateGroupPage() {
                 <div>
                   <p className="font-medium text-slate-900">Unlisted</p>
                   <p className="text-sm text-slate-600">
-                    Anyone with the link can view, but it won't appear in search
+                    Anyone with the link can view, but it won&apos;t appear in search
                   </p>
                 </div>
               </label>

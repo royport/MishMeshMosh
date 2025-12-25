@@ -26,7 +26,7 @@ export function BasicsStep({ formData, updateFormData, initialGroupId }: BasicsS
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) return;
 
         // Get owned groups
@@ -67,14 +67,14 @@ export function BasicsStep({ formData, updateFormData, initialGroupId }: BasicsS
     }
 
     fetchGroups();
-  }, [initialGroupId]);
+  }, [formData.group_id, initialGroupId, updateFormData]);
 
   // When visibility changes to non-private, clear group
   useEffect(() => {
     if (formData.visibility !== 'private' && formData.group_id) {
       updateFormData({ group_id: null });
     }
-  }, [formData.visibility]);
+  }, [formData.group_id, formData.visibility, updateFormData]);
 
   return (
     <div className="space-y-6">
@@ -147,7 +147,7 @@ export function BasicsStep({ formData, updateFormData, initialGroupId }: BasicsS
           ) : groups.length === 0 ? (
             <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
               <p className="text-sm text-amber-800 mb-2">
-                You don't have any groups yet. Create a group first to run a private campaign.
+                You don&apos;t have any groups yet. Create a group first to run a private campaign.
               </p>
               <a
                 href="/workspace/groups/create"

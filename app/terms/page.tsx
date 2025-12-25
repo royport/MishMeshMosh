@@ -23,14 +23,14 @@ export default function TermsOfServicePage() {
               <div className="prose prose-slate max-w-none">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">1. Acceptance of Terms</h2>
                 <p className="text-slate-600 mb-6">
-                  By accessing or using MishMeshMosh ("the Platform"), you agree to be bound by these Terms of Service. 
+                  By accessing or using MishMeshMosh (&quot;the Platform&quot;), you agree to be bound by these Terms of Service.
                   If you do not agree to these terms, please do not use the Platform.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">2. Description of Service</h2>
                 <p className="text-slate-600 mb-6">
-                  MishMeshMosh is a demand-first commerce platform that facilitates connections between buyers ("Backers") 
-                  who express needs and suppliers who fulfill them. The Platform uses digital documents called "Deeds" 
+                  MishMeshMosh is a demand-first commerce platform that facilitates connections between buyers (&quot;Backers&quot;)
+                  who express needs and suppliers who fulfill them. The Platform uses digital documents called &quot;Deeds&quot;
                   to record commitments, offers, and assignments.
                 </p>
 
@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
                 </p>
                 <ul className="list-disc list-inside text-slate-600 mb-6 space-y-2">
                   <li><strong>Need Deeds:</strong> Represent your commitment to purchase as specified if the campaign succeeds</li>
-                  <li><strong>Feed Deeds:</strong> Represent a supplier's binding offer to fulfill under specified terms</li>
+                  <li><strong>Feed Deeds:</strong> Represent a supplier&apos;s binding offer to fulfill under specified terms</li>
                   <li><strong>Reed Deeds:</strong> Represent the final assignment linking backers to suppliers</li>
                 </ul>
                 <p className="text-slate-600 mb-6">
@@ -67,21 +67,21 @@ export default function TermsOfServicePage() {
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">6. Platform Fees</h2>
                 <p className="text-slate-600 mb-6">
-                  MishMeshMosh may charge fees for successful transactions. Fee structures will be clearly 
+                  MishMeshMosh may charge fees for successful transactions. Fee structures will be clearly
                   communicated before any charges apply. Creating campaigns and signing Need Deeds is free.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">7. Dispute Resolution</h2>
                 <p className="text-slate-600 mb-6">
-                  The Platform provides dispute resolution mechanisms for conflicts between parties. 
-                  Users agree to attempt resolution through the Platform before pursuing other remedies. 
+                  The Platform provides dispute resolution mechanisms for conflicts between parties.
+                  Users agree to attempt resolution through the Platform before pursuing other remedies.
                   MishMeshMosh serves as a facilitator and not an arbiter in disputes.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">8. Limitation of Liability</h2>
                 <p className="text-slate-600 mb-6">
-                  MishMeshMosh is a platform that connects parties but does not guarantee the performance 
-                  of any user. We are not responsible for the quality, safety, or legality of items or 
+                  MishMeshMosh is a platform that connects parties but does not guarantee the performance
+                  of any user. We are not responsible for the quality, safety, or legality of items or
                   services offered, the truth or accuracy of listings, or the ability of parties to complete transactions.
                 </p>
 
@@ -98,14 +98,14 @@ export default function TermsOfServicePage() {
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">10. Termination</h2>
                 <p className="text-slate-600 mb-6">
-                  We reserve the right to suspend or terminate accounts that violate these terms. 
-                  Users may close their accounts at any time, subject to fulfilling any outstanding 
+                  We reserve the right to suspend or terminate accounts that violate these terms.
+                  Users may close their accounts at any time, subject to fulfilling any outstanding
                   commitments under signed Deeds.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">11. Changes to Terms</h2>
                 <p className="text-slate-600 mb-6">
-                  We may update these terms from time to time. Continued use of the Platform after 
+                  We may update these terms from time to time. Continued use of the Platform after
                   changes constitutes acceptance of the new terms. We will notify users of significant changes.
                 </p>
 

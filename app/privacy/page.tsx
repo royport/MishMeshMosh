@@ -23,8 +23,8 @@ export default function PrivacyPolicyPage() {
               <div className="prose prose-slate max-w-none">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">1. Introduction</h2>
                 <p className="text-slate-600 mb-6">
-                  MishMeshMosh ("we," "our," or "the Platform") is committed to protecting your privacy. 
-                  This Privacy Policy explains how we collect, use, disclose, and safeguard your information 
+                  MishMeshMosh (&quot;we,&quot; &quot;our,&quot; or &quot;the Platform&quot;) is committed to protecting your privacy.
+                  This Privacy Policy explains how we collect, use, disclose, and safeguard your information
                   when you use our platform.
                 </p>
 
@@ -77,15 +77,15 @@ export default function PrivacyPolicyPage() {
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">5. Data Security</h2>
                 <p className="text-slate-600 mb-6">
-                  We implement appropriate technical and organizational measures to protect your information. 
-                  However, no method of transmission over the Internet is 100% secure. We cannot guarantee 
+                  We implement appropriate technical and organizational measures to protect your information.
+                  However, no method of transmission over the Internet is 100% secure. We cannot guarantee
                   absolute security but strive to protect your data using industry-standard practices.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">6. Data Retention</h2>
                 <p className="text-slate-600 mb-6">
-                  We retain your information for as long as your account is active or as needed to provide 
-                  services. Deed documents may be retained indefinitely as they represent legal records. 
+                  We retain your information for as long as your account is active or as needed to provide
+                  services. Deed documents may be retained indefinitely as they represent legal records.
                   You may request deletion of your account, subject to our legal obligations to retain certain records.
                 </p>
 
@@ -106,35 +106,35 @@ export default function PrivacyPolicyPage() {
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">8. Cookies</h2>
                 <p className="text-slate-600 mb-6">
-                  We use cookies and similar technologies to enhance your experience, analyze usage, 
-                  and remember your preferences. You can control cookies through your browser settings, 
+                  We use cookies and similar technologies to enhance your experience, analyze usage,
+                  and remember your preferences. You can control cookies through your browser settings,
                   though some Platform features may not function properly without them.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">9. Third-Party Links</h2>
                 <p className="text-slate-600 mb-6">
-                  The Platform may contain links to third-party websites. We are not responsible for 
+                  The Platform may contain links to third-party websites. We are not responsible for
                   the privacy practices of these external sites. We encourage you to review their privacy policies.
                 </p>
 
-                <h2 className="text-2xl font-bold text-slate-900 mb-4">10. Children's Privacy</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-4">10. Children&apos;s Privacy</h2>
                 <p className="text-slate-600 mb-6">
-                  The Platform is not intended for users under 18 years of age. We do not knowingly 
-                  collect information from children. If we learn we have collected information from a 
+                  The Platform is not intended for users under 18 years of age. We do not knowingly
+                  collect information from children. If we learn we have collected information from a
                   child, we will delete it promptly.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">11. International Users</h2>
                 <p className="text-slate-600 mb-6">
-                  If you access the Platform from outside the United States, your information may be 
-                  transferred to and processed in the United States or other countries. By using the 
+                  If you access the Platform from outside the United States, your information may be
+                  transferred to and processed in the United States or other countries. By using the
                   Platform, you consent to such transfers.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">12. Changes to This Policy</h2>
                 <p className="text-slate-600 mb-6">
-                  We may update this Privacy Policy periodically. We will notify you of material changes 
-                  by posting the new policy on the Platform and updating the "Last updated" date.
+                  We may update this Privacy Policy periodically. We will notify you of material changes
+                  by posting the new policy on the Platform and updating the &quot;Last updated&quot; date.
                 </p>
 
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">13. Contact Us</h2>

@@ -381,7 +381,7 @@ export default async function AssignmentPage({ params }: { params: { id: string 
             <div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">Having Issues?</h2>
               <p className="text-slate-600 text-sm max-w-xl">
-                If you're experiencing problems with this assignment, you can file a dispute.
+                If you&apos;re experiencing problems with this assignment, you can file a dispute.
                 Our team will review the case and help resolve any conflicts between parties.
               </p>
             </div>

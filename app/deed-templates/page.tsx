@@ -24,12 +24,12 @@ export default function DeedTemplatesPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 md:p-12 mb-12">
               <h2 className="text-2xl font-bold text-slate-900 mb-4">What Are Deeds?</h2>
               <p className="text-slate-600 mb-4">
-                Deeds are the digital documents that form the backbone of every MishMeshMosh transaction. 
-                Unlike traditional contracts that require intermediaries, Deeds create trust through 
+                Deeds are the digital documents that form the backbone of every MishMeshMosh transaction.
+                Unlike traditional contracts that require intermediaries, Deeds create trust through
                 transparent, auditable, and legally-binding digital commitments.
               </p>
               <p className="text-slate-600">
-                Each Deed type serves a specific purpose in the campaign lifecycle, documenting commitments 
+                Each Deed type serves a specific purpose in the campaign lifecycle, documenting commitments
                 at every stage from initial interest to final fulfillment.
               </p>
             </div>
@@ -53,10 +53,10 @@ export default function DeedTemplatesPage() {
                 </div>
                 <div className="p-8">
                   <p className="text-slate-600 mb-6">
-                    The Need Deed is signed by backers when they join a campaign. It represents their 
+                    The Need Deed is signed by backers when they join a campaign. It represents their
                     commitment to purchase if the campaign succeeds and a supplier is assigned.
                   </p>
-                  
+
                   <h4 className="font-semibold text-slate-900 mb-3">Key Components:</h4>
                   <ul className="list-disc list-inside text-slate-600 mb-6 space-y-2">
                     <li><strong>Backer Information:</strong> Name, contact details, account ID</li>
@@ -69,9 +69,9 @@ export default function DeedTemplatesPage() {
                   </ul>
 
                   <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
-                    <h4 className="font-semibold text-blue-900 mb-2">When It's Generated:</h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">When It&apos;s Generated:</h4>
                     <p className="text-blue-700 text-sm">
-                      Created when a user clicks "Back This Campaign" and completes the commitment flow.
+                      Created when a user clicks &quot;Back This Campaign&quot; and completes the commitment flow.
                     </p>
                   </div>
                 </div>
@@ -94,10 +94,10 @@ export default function DeedTemplatesPage() {
                 </div>
                 <div className="p-8">
                   <p className="text-slate-600 mb-6">
-                    The Feed Deed is submitted by suppliers who want to fulfill a seeded campaign. 
-                    It's a binding offer that locks in pricing, delivery terms, and fulfillment guarantees.
+                    The Feed Deed is submitted by suppliers who want to fulfill a seeded campaign.
+                    It&apos;s a binding offer that locks in pricing, delivery terms, and fulfillment guarantees.
                   </p>
-                  
+
                   <h4 className="font-semibold text-slate-900 mb-3">Key Components:</h4>
                   <ul className="list-disc list-inside text-slate-600 mb-6 space-y-2">
                     <li><strong>Supplier Information:</strong> Business details, contact, credentials</li>
@@ -111,7 +111,7 @@ export default function DeedTemplatesPage() {
                   </ul>
 
                   <div className="bg-amber-50 rounded-xl p-6 border border-amber-100">
-                    <h4 className="font-semibold text-amber-900 mb-2">When It's Generated:</h4>
+                    <h4 className="font-semibold text-amber-900 mb-2">When It&apos;s Generated:</h4>
                     <p className="text-amber-700 text-sm">
                       Created when a supplier submits an offer on a campaign in the SEED or FEED phase.
                     </p>
@@ -136,11 +136,11 @@ export default function DeedTemplatesPage() {
                 </div>
                 <div className="p-8">
                   <p className="text-slate-600 mb-6">
-                    The Reed Deed is the final contract that officially assigns the selected supplier 
-                    to fulfill the campaign. It requires signatures from multiple parties and initiates 
+                    The Reed Deed is the final contract that officially assigns the selected supplier
+                    to fulfill the campaign. It requires signatures from multiple parties and initiates
                     the fulfillment process.
                   </p>
-                  
+
                   <h4 className="font-semibold text-slate-900 mb-3">Key Components:</h4>
                   <ul className="list-disc list-inside text-slate-600 mb-6 space-y-2">
                     <li><strong>Campaign Summary:</strong> Complete overview of the need</li>
@@ -154,7 +154,7 @@ export default function DeedTemplatesPage() {
                   </ul>
 
                   <div className="bg-purple-50 rounded-xl p-6 border border-purple-100">
-                    <h4 className="font-semibold text-purple-900 mb-2">When It's Generated:</h4>
+                    <h4 className="font-semibold text-purple-900 mb-2">When It&apos;s Generated:</h4>
                     <p className="text-purple-700 text-sm">
                       Created when the campaign owner selects a supplier offer and initiates the assignment process.
                     </p>

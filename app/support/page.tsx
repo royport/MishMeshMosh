@@ -75,7 +75,7 @@ export default function SupportPage() {
             {/* Contact Form */}
             <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 md:p-12">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Send Us a Message</h2>
-              
+
               {submitted ? (
                 <div className="text-center py-12">
                   <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
@@ -84,7 +84,7 @@ export default function SupportPage() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-2">Message Sent!</h3>
-                  <p className="text-slate-600 mb-6">We'll get back to you as soon as possible.</p>
+                  <p className="text-slate-600 mb-6">We&apos;ll get back to you as soon as possible.</p>
                   <button
                     onClick={() => {
                       setSubmitted(false);
