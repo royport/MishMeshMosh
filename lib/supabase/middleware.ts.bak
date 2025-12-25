@@ -62,16 +62,12 @@ export async function updateSession(request: NextRequest) {
 
   // Protected routes that require authentication
   const protectedPaths = ['/workspace', '/admin', '/create'];
-  const isProtectedPath = protectedPaths.some(path =>
+  const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   );
-
-  // Auth pages should not trigger redirects
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
-
+  
   // If accessing protected route without auth, redirect to login
-  // But avoid redirect loop if already on auth pages
-  if (isProtectedPath && !user && !isAuthPage) {
+  if (isProtectedPath && !user) {
     const loginUrl = new URL('/auth/login', request.url);
     return NextResponse.redirect(loginUrl);
   }

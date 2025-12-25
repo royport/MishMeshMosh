@@ -1,0 +1,11 @@
+{
+  "compareFolders.exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/.turbo/**",
+    "**/.cache/**",
+    "**/coverage/**",
+    "**/.env*"
+  ]
+}
