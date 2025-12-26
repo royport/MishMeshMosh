@@ -1,15 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: campaignId } = await params;
+
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,10 +30,8 @@ export async function POST(
     if (!permission) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
-
-    const campaignId = params.id;
     const body = await request.json();
-    const { action } = body;
+    const { action } = body as { action?: string };
 
     // Get current campaign
     const { data: campaign, error: fetchError } = await supabase
@@ -42,7 +44,7 @@ export async function POST(
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    let updates: any = {};
+    const updates: Record<string, unknown> = {};
     let auditAction = '';
 
     switch (action) {
@@ -83,7 +85,7 @@ export async function POST(
         auditAction = 'campaign_reactivated';
         break;
 
-      case 'delete':
+      case 'delete': {
         // Only admins can delete
         if (permission.permission !== 'admin') {
           return NextResponse.json(
@@ -109,6 +111,7 @@ export async function POST(
         });
 
         return NextResponse.json({ success: true, deleted: true });
+      }
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -131,7 +134,7 @@ export async function POST(
       payload_json: {
         campaign_title: campaign.title,
         previous_status: campaign.status_need || campaign.status_feed,
-        new_status: updates.status_need || updates.status_feed,
+        new_status: (updates as any).status_need || (updates as any).status_feed,
       },
     });
 
@@ -139,7 +142,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error moderating campaign:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to moderate campaign' },
+      { error: error?.message || 'Failed to moderate campaign' },
       { status: 500 }
     );
   }

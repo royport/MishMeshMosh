@@ -57,6 +57,16 @@ export default async function GroupPage({ params }: GroupPageProps) {
     .eq('group_id', params.id)
     .order('created_at', { ascending: true });
 
+    // Fetch members - NORMAL
+
+  const normalizedMembers =
+    (members ?? []).map((m: any) => ({
+      ...m,
+      user: Array.isArray(m.user) ? m.user[0] : m.user,
+    })) ?? [];
+
+
+
   // Fetch group campaigns
   const { data: campaigns } = await supabase
     .from('campaigns')
@@ -201,7 +211,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
           {/* Members */}
           <GroupMemberManager
             groupId={group.id}
-            members={members || []}
+            members={normalizedMembers}
             canManage={canManage}
             isOwner={isOwner}
             ownerId={group.owner_id}

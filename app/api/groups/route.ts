@@ -1,71 +1,91 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // GET - List groups for current user
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get groups where user is owner or member
+    // Groups where user is owner
     const { data: ownedGroups, error: ownedError } = await supabase
       .from('groups')
-      .select('*')
+      .select('id, name, owner_id, visibility, created_at, updated_at')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
 
     if (ownedError) throw ownedError;
 
+    // Groups where user is a member (join groups)
     const { data: memberships, error: memberError } = await supabase
       .from('group_members')
-      .select(`
+      .select(
+        `
         member_role,
-        group:groups (*)
-      `)
+        group:groups (id, name, owner_id, visibility, created_at, updated_at)
+      `
+      )
       .eq('user_id', user.id);
 
     if (memberError) throw memberError;
 
-    // Combine and deduplicate
-    const memberGroups = memberships
-      ?.filter(m => m.group)
-      .map(m => ({ ...m.group, member_role: m.member_role })) || [];
+    const ownedIds = new Set((ownedGroups ?? []).map(g => g.id));
+
+    const memberGroups =
+      (memberships ?? [])
+        .map(m => {
+          const g = (m as any).group; // join result
+          if (!g) return null;
+          return { ...g, member_role: m.member_role };
+        })
+        .filter(Boolean)
+        // remove groups already included as owner
+        .filter((mg: any) => !ownedIds.has(mg.id)) ?? [];
 
     const allGroups = [
-      ...(ownedGroups?.map(g => ({ ...g, member_role: 'owner' })) || []),
-      ...memberGroups.filter(mg => !ownedGroups?.some(og => og.id === mg.id))
+      ...((ownedGroups ?? []).map(g => ({ ...g, member_role: 'owner' as const }))),
+      ...(memberGroups as any[]),
     ];
 
     return NextResponse.json({ groups: allGroups });
   } catch (error: any) {
     console.error('Error fetching groups:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch groups' },
+      { error: error?.message || 'Failed to fetch groups' },
       { status: 500 }
     );
   }
 }
 
 // POST - Create a new group
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, visibility = 'private' } = body;
+    const body = (await request.json()) as {
+      name?: string;
+      visibility?: 'private' | 'public';
+    };
 
-    if (!name || name.trim().length < 2) {
+    const name = body.name?.trim();
+    const visibility = body.visibility ?? 'private';
+
+    if (!name || name.length < 2) {
       return NextResponse.json(
         { error: 'Group name must be at least 2 characters' },
         { status: 400 }
@@ -76,33 +96,32 @@ export async function POST(request: Request) {
     const { data: group, error: groupError } = await supabase
       .from('groups')
       .insert({
-        name: name.trim(),
+        name,
         owner_id: user.id,
         visibility,
       })
-      .select()
+      .select('id, name, owner_id, visibility, created_at, updated_at')
       .single();
 
     if (groupError) throw groupError;
 
-    // Add owner as a member with 'owner' role
-    const { error: memberError } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: group.id,
-        user_id: user.id,
-        member_role: 'owner',
-      });
+    // Add owner as member (best-effort)
+    const { error: memberInsertError } = await supabase.from('group_members').insert({
+      group_id: group.id,
+      user_id: user.id,
+      member_role: 'owner',
+    });
 
-    if (memberError) {
-      console.error('Error adding owner as member:', memberError);
+    if (memberInsertError) {
+      console.error('Error adding owner as member:', memberInsertError);
+      // don't fail the whole request
     }
 
     return NextResponse.json({ group });
   } catch (error: any) {
     console.error('Error creating group:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create group' },
+      { error: error?.message || 'Failed to create group' },
       { status: 500 }
     );
   }

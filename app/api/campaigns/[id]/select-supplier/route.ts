@@ -3,38 +3,37 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: campaignId } = await params; // ✅ Next 16: params is a Promise
+
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as { offer_id?: string };
     const { offer_id } = body;
 
     if (!offer_id) {
-      return NextResponse.json(
-        { error: 'Missing offer_id' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing offer_id' }, { status: 400 });
     }
 
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', campaignId)
       .eq('kind', 'feed')
       .maybeSingle();
 
     if (campaignError || !campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
     if (campaign.created_by !== user.id) {
@@ -55,20 +54,17 @@ export async function POST(
       .from('supplier_offers')
       .select('*, supplier:users!supplier_id(id, email, user_metadata)')
       .eq('id', offer_id)
-      .eq('campaign_id', params.id)
+      .eq('campaign_id', campaignId)
       .maybeSingle();
 
     if (offerError || !selectedOffer) {
-      return NextResponse.json(
-        { error: 'Offer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
     }
 
     const { data: allOffers } = await supabase
       .from('supplier_offers')
       .select('id, supplier_id, status')
-      .eq('campaign_id', params.id)
+      .eq('campaign_id', campaignId)
       .eq('status', 'signed');
 
     await supabase
@@ -77,7 +73,7 @@ export async function POST(
         status_feed: 'supplier_selected',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id);
+      .eq('id', campaignId);
 
     await supabase
       .from('supplier_offers')
@@ -114,7 +110,7 @@ export async function POST(
           type: 'offer_rejected',
           title: 'Offer not selected',
           message: `Thank you for your offer on "${campaign.title}". Unfortunately, another supplier was selected for this opportunity.`,
-          link: `/campaign/${params.id}`,
+          link: `/campaign/${campaignId}`,
           read: false,
         }));
 
@@ -127,13 +123,13 @@ export async function POST(
       actor_user_id: user.id,
       action: 'supplier_selected',
       entity_type: 'campaign',
-      entity_id: params.id,
+      entity_id: campaignId,
       payload_json: {
         offer_id,
         supplier_id: selectedOffer.supplier_id,
         supplier_name:
-          selectedOffer.supplier.user_metadata?.display_name ||
-          selectedOffer.supplier.email,
+          selectedOffer.supplier?.user_metadata?.display_name ||
+          selectedOffer.supplier?.email,
         total_offers: allOffers?.length || 0,
         rejected_offers: rejectedOfferIds?.length || 0,
       },
@@ -146,7 +142,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Failed to select supplier:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to select supplier' },
+      { error: error?.message || 'Failed to select supplier' },
       { status: 500 }
     );
   }

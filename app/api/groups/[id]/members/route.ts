@@ -1,24 +1,28 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // POST - Add member to group (invite)
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: groupId } = await params;
+
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = params.id;
-    const body = await request.json();
-    const { email, role = 'member' } = body;
+    const body = (await request.json()) as { email?: string; role?: string };
+    const email = body.email;
+    const role = body.role ?? 'member';
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -89,12 +93,14 @@ export async function POST(
         user_id: targetUser.id,
         member_role: role,
       })
-      .select(`
+      .select(
+        `
         id,
         member_role,
         created_at,
         user:users (id, email, full_name)
-      `)
+      `
+      )
       .single();
 
     if (memberError) throw memberError;
@@ -116,7 +122,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error adding member:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to add member' },
+      { error: error?.message || 'Failed to add member' },
       { status: 500 }
     );
   }
@@ -124,18 +130,21 @@ export async function POST(
 
 // DELETE - Remove member from group
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: groupId } = await params;
+
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = params.id;
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
     const userId = searchParams.get('userId');
@@ -161,7 +170,7 @@ export async function DELETE(
     const isOwner = group.owner_id === user.id;
 
     // Users can remove themselves, owners can remove anyone
-    const targetUserId = userId || null;
+    const targetUserId = userId ?? null;
     const isSelfRemoval = targetUserId === user.id;
 
     if (!isOwner && !isSelfRemoval) {
@@ -179,10 +188,7 @@ export async function DELETE(
       );
     }
 
-    let query = supabase
-      .from('group_members')
-      .delete()
-      .eq('group_id', groupId);
+    let query = supabase.from('group_members').delete().eq('group_id', groupId);
 
     if (memberId) {
       query = query.eq('id', memberId);
@@ -191,14 +197,13 @@ export async function DELETE(
     }
 
     const { error } = await query;
-
     if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error removing member:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to remove member' },
+      { error: error?.message || 'Failed to remove member' },
       { status: 500 }
     );
   }

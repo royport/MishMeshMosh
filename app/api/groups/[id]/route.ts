@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // GET - Get single group with members
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+    request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createClient();
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = params.id;
+    const { id: groupId } = await params;
 
     // Get group details
     const { data: group, error: groupError } = await supabase
@@ -93,8 +93,8 @@ export async function GET(
 
 // PATCH - Update group
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+      request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createClient();
@@ -103,8 +103,7 @@ export async function PATCH(
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const groupId = params.id;
+    const { id: groupId } = await params;
     const body = await request.json();
 
     // Check ownership
@@ -143,8 +142,8 @@ export async function PATCH(
 
 // DELETE - Delete group
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+   request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createClient();
@@ -154,7 +153,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = params.id;
+    const { id: groupId } = await params;
 
     // Check ownership
     const { data: group } = await supabase

@@ -4,9 +4,10 @@ import { createHash } from 'crypto';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+{ params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -21,7 +22,7 @@ export async function POST(
         campaigns(*),
         supplier_offer_rows(*)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('supplier_id', user.id)
       .maybeSingle();
 

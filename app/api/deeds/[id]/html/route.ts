@@ -13,12 +13,17 @@ function formatDate(date: Date, includeTime: boolean = false): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: deedId } = await params; // ✅ Next 16: params is a Promise
+
     const supabase = createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return new NextResponse('Unauthorized', { status: 401 });
@@ -27,7 +32,7 @@ export async function GET(
     const { data: deed, error } = await supabase
       .from('deeds')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', deedId)
       .maybeSingle();
 
     if (error || !deed) {
@@ -42,7 +47,10 @@ export async function GET(
 
     const doc = deed.doc_json;
 
-    const itemsHtml = doc.items?.map((item: any, index: number) => `
+    const itemsHtml =
+      doc.items
+        ?.map(
+          (item: any, index: number) => `
       <tr>
         <td>${index + 1}</td>
         <td>${item.title}</td>
@@ -52,7 +60,9 @@ export async function GET(
         <td class="num">$${item.unitPrice?.toFixed(2)}</td>
         <td class="num">$${item.rowTotal?.toFixed(2)}</td>
       </tr>
-    `).join('') || '';
+    `
+        )
+        .join('') || '';
 
     const html = `<!DOCTYPE html>
 <html lang="en">

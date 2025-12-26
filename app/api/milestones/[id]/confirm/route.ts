@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+   request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // ✅ this is what you’re missing
     const supabase = createClient();
     const {
       data: { user },
@@ -27,7 +28,7 @@ export async function POST(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
     if (!milestone) {
@@ -58,7 +59,7 @@ export async function POST(
         status: 'accepted',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -71,7 +72,7 @@ export async function POST(
       actor_user_id: user.id,
       event_type: 'milestone_accepted',
       payload_json: {
-        milestone_id: params.id,
+        milestone_id: id,
         confirmed_by: user.id,
       },
     });

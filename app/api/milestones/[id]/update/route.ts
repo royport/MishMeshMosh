@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+{ params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createClient();
     const {
       data: { user },
@@ -32,7 +33,7 @@ export async function POST(
           selectedOffer:supplier_offers!selected_offer_id(supplier_id)
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
     if (!milestone) {
@@ -63,7 +64,7 @@ export async function POST(
     const { data: updatedMilestone, error: updateError } = await supabase
       .from('fulfillment_milestones')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -76,7 +77,7 @@ export async function POST(
       actor_user_id: user.id,
       event_type: 'milestone_updated',
       payload_json: {
-        milestone_id: params.id,
+        milestone_id: id,
         status,
         proof_url: proof_url || null,
         notes: notes || null,
@@ -103,7 +104,7 @@ export async function POST(
         user_id: backerId,
         kind: 'milestone_update',
         context_type: 'fulfillment_milestone',
-        context_id: params.id,
+        context_id: id,
         payload_json: {
           milestone_title: milestone.title,
           status,

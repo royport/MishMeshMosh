@@ -1,22 +1,24 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // GET - Get dispute details
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: disputeId } = await params; // ✅ FIX: await params
+
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const disputeId = params.id;
 
     const { data: dispute, error } = await supabase
       .from('disputes')
@@ -30,7 +32,7 @@ export async function GET(
 
     // Check access
     if (dispute.opened_by !== user.id) {
-      // Check if admin
+      // Check if admin/moderator
       const { data: permission } = await supabase
         .from('platform_permissions')
         .select('permission')
@@ -44,7 +46,8 @@ export async function GET(
     }
 
     // Get related context info
-    let contextInfo = null;
+    let contextInfo: any = null;
+
     if (dispute.context_type === 'deed') {
       const { data } = await supabase
         .from('deeds')
@@ -72,7 +75,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Error fetching dispute:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch dispute' },
+      { error: error?.message || 'Failed to fetch dispute' },
       { status: 500 }
     );
   }
