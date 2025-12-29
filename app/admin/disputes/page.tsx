@@ -11,10 +11,11 @@ interface SearchParams {
 export default async function AdminDisputesPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const supabase = createClient();
-  const status = searchParams.status || 'open';
+  const params = await searchParams;
+  const status = params.status || 'open';
 
   let query = supabase
     .from('disputes')

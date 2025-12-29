@@ -37,11 +37,12 @@ export function LoginForm() {
       if (data.session) {
         console.log('Session established:', data.session.user.email);
         showToast('Signed in successfully! Redirecting...', 'success');
-        
-        // Small delay to ensure cookies are set
+
+        // Force a full page reload to ensure cookies are properly set
+        // and recognized by the middleware
         setTimeout(() => {
-          window.location.href = '/workspace';
-        }, 500);
+          window.location.replace('/api/auth/login-callback?redirectTo=/workspace');
+        }, 300);
       } else {
         console.error('No session returned');
         showToast('Login failed - no session created. Please try again.', 'error');

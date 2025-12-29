@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface CreateCampaignPageProps {
-  searchParams: { group?: string };
+  searchParams: Promise<{ group?: string }>;
 }
 
 export default async function CreateCampaignPage({ searchParams }: CreateCampaignPageProps) {
@@ -25,8 +25,10 @@ export default async function CreateCampaignPage({ searchParams }: CreateCampaig
     redirect('/auth/login');
   }
 
+  const params = await searchParams;
+
   // Validate group access if group is provided
-  let initialGroupId = searchParams.group || null;
+  let initialGroupId = params.group || null;
   
   if (initialGroupId) {
     const { data: group } = await supabase

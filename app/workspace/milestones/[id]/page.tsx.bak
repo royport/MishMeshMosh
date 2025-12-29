@@ -4,7 +4,7 @@ import SupplierMilestoneUpdateForm from '@/components/fulfillment/supplier-miles
 
 export const dynamic = 'force-dynamic';
 
-export default async function MilestoneUpdatePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MilestoneUpdatePage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
   const {
@@ -14,8 +14,6 @@ export default async function MilestoneUpdatePage({ params }: { params: Promise<
   if (!user) {
     redirect('/auth/login');
   }
-
-  const { id } = await params;
 
   const { data: milestone, error } = await supabase
     .from('fulfillment_milestones')
@@ -28,7 +26,7 @@ export default async function MilestoneUpdatePage({ params }: { params: Promise<
         selectedOffer:supplier_offers!selected_offer_id(supplier_id)
       )
     `)
-    .eq('id', id)
+    .eq('id', params.id)
     .maybeSingle();
 
   if (error || !milestone) {
@@ -80,7 +78,7 @@ export default async function MilestoneUpdatePage({ params }: { params: Promise<
           </div>
 
           <SupplierMilestoneUpdateForm
-            milestoneId={id}
+            milestoneId={params.id}
             currentStatus={milestone.status}
             assignmentId={milestone.assignment_id}
           />

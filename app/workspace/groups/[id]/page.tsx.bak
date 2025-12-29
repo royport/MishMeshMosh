@@ -7,7 +7,7 @@ import { GroupSettings } from '@/components/groups/group-settings';
 export const dynamic = 'force-dynamic';
 
 interface GroupPageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function GroupPage({ params }: GroupPageProps) {
@@ -18,13 +18,11 @@ export default async function GroupPage({ params }: GroupPageProps) {
     redirect('/auth/login');
   }
 
-  const { id } = await params;
-
   // Fetch group with members and campaigns
   const { data: group, error: groupError } = await supabase
     .from('groups')
     .select('*')
-    .eq('id', id)
+    .eq('id', params.id)
     .single();
 
   if (groupError || !group) {
@@ -35,7 +33,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
   const { data: membership } = await supabase
     .from('group_members')
     .select('member_role')
-    .eq('group_id', id)
+    .eq('group_id', params.id)
     .eq('user_id', user.id)
     .single();
 
@@ -56,7 +54,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       created_at,
       user:users (id, email, full_name)
     `)
-    .eq('group_id', id)
+    .eq('group_id', params.id)
     .order('created_at', { ascending: true });
 
     // Fetch members - NORMAL
@@ -82,7 +80,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       status_feed,
       created_at
     `)
-    .eq('group_id', id)
+    .eq('group_id', params.id)
     .order('created_at', { ascending: false });
 
   return (

@@ -5,7 +5,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 interface DisputePageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function DisputePage({ params }: DisputePageProps) {
@@ -16,12 +16,10 @@ export default async function DisputePage({ params }: DisputePageProps) {
     redirect('/auth/login');
   }
 
-  const { id } = await params;
-
   const { data: dispute, error } = await supabase
     .from('disputes')
     .select('*')
-    .eq('id', id)
+    .eq('id', params.id)
     .single();
 
   if (error || !dispute) {

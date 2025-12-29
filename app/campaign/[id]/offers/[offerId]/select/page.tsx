@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function SelectSupplierPage({
   params,
 }: {
-  params: { id: string; offerId: string };
+  params: Promise<{ id: string; offerId: string }>;
 }) {
   const supabase = createClient();
 
@@ -17,10 +17,12 @@ export default async function SelectSupplierPage({
     notFound();
   }
 
+  const { id, offerId } = await params;
+
   const { data: campaign } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'feed')
     .maybeSingle();
 
@@ -56,8 +58,8 @@ export default async function SelectSupplierPage({
         campaign_items(*)
       )
     `)
-    .eq('id', params.offerId)
-    .eq('campaign_id', params.id)
+    .eq('id', offerId)
+    .eq('campaign_id', id)
     .maybeSingle();
 
   if (error || !offer) {
@@ -67,7 +69,7 @@ export default async function SelectSupplierPage({
   const { data: allOffers } = await supabase
     .from('supplier_offers')
     .select('id, supplier_id')
-    .eq('campaign_id', params.id)
+    .eq('campaign_id', id)
     .eq('status', 'signed');
 
   const totalValue = offer.supplier_offer_rows.reduce(
@@ -209,8 +211,8 @@ export default async function SelectSupplierPage({
             </div>
 
             <SelectSupplierButton
-              campaignId={params.id}
-              offerId={params.offerId}
+              campaignId={id}
+              offerId={offerId}
               supplierName={
                 offer.supplier.user_metadata?.display_name || offer.supplier.email
               }

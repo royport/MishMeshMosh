@@ -11,8 +11,10 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function FeedCampaignPage({ params }: { params: { id: string } }) {
+export default async function FeedCampaignPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createClient();
+
+  const { id } = await params;
 
   const { data: campaign, error } = await supabase
     .from('campaigns')
@@ -20,7 +22,7 @@ export default async function FeedCampaignPage({ params }: { params: { id: strin
       *,
       feed_campaigns(*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'feed')
     .maybeSingle();
 
@@ -31,14 +33,14 @@ export default async function FeedCampaignPage({ params }: { params: { id: strin
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: bom } = await supabase.rpc('get_campaign_bom', {
-    p_campaign_id: params.id,
+    p_campaign_id: id,
   });
 
   const { data: existingOffer } = user
     ? await supabase
         .from('supplier_offers')
         .select('id, status')
-        .eq('campaign_id', params.id)
+        .eq('campaign_id', id)
         .eq('supplier_id', user.id)
         .maybeSingle()
     : { data: null };
@@ -46,15 +48,15 @@ export default async function FeedCampaignPage({ params }: { params: { id: strin
   const { data: signedOffers } = await supabase
     .from('supplier_offers')
     .select('id')
-    .eq('campaign_id', params.id)
+    .eq('campaign_id', id)
     .eq('status', 'signed');
 
   const isCreator = user && campaign.created_by === user.id;
   const offerCount = signedOffers?.length || 0;
 
-  const needCampaignId = isCreator ? await findNeedCampaignForFeed(params.id) : null;
-  const selectedOfferId = isCreator ? await getSelectedOfferForFeed(params.id) : null;
-  const assignmentId = isCreator ? await checkAssignmentExists(params.id) : null;
+  const needCampaignId = isCreator ? await findNeedCampaignForFeed(id) : null;
+  const selectedOfferId = isCreator ? await getSelectedOfferForFeed(id) : null;
+  const assignmentId = isCreator ? await checkAssignmentExists(id) : null;
 
   const feedCampaign = campaign.feed_campaigns?.[0];
   const daysLeft = feedCampaign?.bid_deadline_at
@@ -91,7 +93,7 @@ export default async function FeedCampaignPage({ params }: { params: { id: strin
 
         {isCreator ? (
           <FeedCampaignAdmin
-            campaignId={params.id}
+            campaignId={id}
             statusFeed={campaign.status_feed || 'draft'}
             offerCount={offerCount}
             needCampaignId={needCampaignId}
@@ -147,7 +149,7 @@ export default async function FeedCampaignPage({ params }: { params: { id: strin
                 </div>
               </div>
             ) : (
-              <SupplierOfferForm campaignId={params.id} bom={bom || []} />
+              <SupplierOfferForm campaignId={id} bom={bom || []} />
             )}
           </div>
         )}

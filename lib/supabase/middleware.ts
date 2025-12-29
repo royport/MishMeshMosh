@@ -31,9 +31,12 @@ export function updateSession(request: NextRequest) {
   // Check for common Supabase auth cookie naming patterns
   const cookieNames = request.cookies.getAll().map((c) => c.name);
 
+  // More comprehensive cookie detection
   const hasSupabaseSession =
     // Newer SSR cookie format often contains "sb-" and "auth-token"
     cookieNames.some((n) => n.includes("sb-") && n.includes("auth-token")) ||
+    // Check for any sb- prefixed cookies (more lenient)
+    cookieNames.some((n) => n.startsWith("sb-") && (n.includes("access") || n.includes("refresh"))) ||
     // Older formats
     cookieNames.includes("sb-access-token") ||
     cookieNames.includes("sb-refresh-token");

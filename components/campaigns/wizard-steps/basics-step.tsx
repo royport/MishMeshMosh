@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { CampaignFormData } from '@/lib/types/campaign';
 import { createClient } from '@/lib/supabase/client';
 
@@ -149,12 +150,12 @@ export function BasicsStep({ formData, updateFormData, initialGroupId }: BasicsS
               <p className="text-sm text-amber-800 mb-2">
                 You don&apos;t have any groups yet. Create a group first to run a private campaign.
               </p>
-              <a
+              <Link
                 href="/workspace/groups/create"
                 className="text-sm font-medium text-amber-900 hover:text-amber-700 underline"
               >
                 Create a Group →
-              </a>
+              </Link>
             </div>
           ) : (
             <>

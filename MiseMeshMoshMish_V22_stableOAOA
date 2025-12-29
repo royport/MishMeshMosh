@@ -1,0 +1,35 @@
+[33mcommit c351899e35244ad53293b41752b27107cde2eabf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Fri Dec 26 15:48:42 2025 +0200
+
+    fix nextjs update issues
+
+[33mcommit 7dcf18df696dba2881745d6488df05b598246a28[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Thu Dec 25 14:18:02 2025 +0200
+
+    fix eslit issues
+
+[33mcommit c2e5b554666705f69edc6eea058491ea220e24ad[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Thu Dec 25 12:30:51 2025 +0200
+
+    local - cahange db and documents
+
+[33mcommit bc83a3c2163ce2d51a24d6a7c42294f24549deee[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Wed Dec 24 14:16:49 2025 +0200
+
+    Update clock text
+
+[33mcommit 238b06049eeeb6c032dd6b750bfd0e424f01f7f9[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Wed Dec 24 12:39:19 2025 +0200
+
+    Added clock and split to components
+
+[33mcommit a76beb07a90a30c796c05c13f1d258c9be597d67[m
+Author: royport <royportnoy.il@gmail.com>
+Date:   Wed Dec 24 12:26:01 2025 +0200
+
+    Added clock and split to components

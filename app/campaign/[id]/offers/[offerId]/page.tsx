@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function OfferDetailPage({
   params,
 }: {
-  params: { id: string; offerId: string };
+  params: Promise<{ id: string; offerId: string }>;
 }) {
   const supabase = createClient();
 
@@ -17,10 +17,12 @@ export default async function OfferDetailPage({
     notFound();
   }
 
+  const { id, offerId } = await params;
+
   const { data: campaign } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'feed')
     .maybeSingle();
 
@@ -42,8 +44,8 @@ export default async function OfferDetailPage({
         campaign_items(*)
       )
     `)
-    .eq('id', params.offerId)
-    .eq('campaign_id', params.id)
+    .eq('id', offerId)
+    .eq('campaign_id', id)
     .maybeSingle();
 
   if (error || !offer) {
@@ -59,7 +61,7 @@ export default async function OfferDetailPage({
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-5xl mx-auto px-4 py-12">
         <Link
-          href={`/campaign/${params.id}/offers`}
+          href={`/campaign/${id}/offers`}
           className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
         >
           ← Back to All Offers
@@ -181,7 +183,7 @@ export default async function OfferDetailPage({
             </p>
 
             <Link
-              href={`/campaign/${params.id}/offers/${offer.id}/select`}
+              href={`/campaign/${id}/offers/${offer.id}/select`}
               className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-lg"
             >
               Select This Supplier

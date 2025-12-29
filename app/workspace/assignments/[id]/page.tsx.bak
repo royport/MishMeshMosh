@@ -7,7 +7,7 @@ import { DisputeButton } from '@/components/trust/dispute-button';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AssignmentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AssignmentPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,8 +15,6 @@ export default async function AssignmentPage({ params }: { params: Promise<{ id:
   if (!user) {
     notFound();
   }
-
-  const { id } = await params;
 
   const { data: assignment, error } = await supabase
     .from('assignments')
@@ -51,13 +49,13 @@ export default async function AssignmentPage({ params }: { params: Promise<{ id:
         needDeed:deeds!need_deed_id(*)
       )
     `)
-    .eq('id', id)
+    .eq('id', params.id)
     .maybeSingle();
 
   const { data: milestones } = await supabase
     .from('fulfillment_milestones')
     .select('*')
-    .eq('assignment_id', id)
+    .eq('assignment_id', params.id)
     .order('created_at', { ascending: true });
 
   if (error || !assignment) {
@@ -367,10 +365,10 @@ export default async function AssignmentPage({ params }: { params: Promise<{ id:
         </div>
 
         {isBacker ? (
-          <BackerTrackingView milestones={milestones || []} assignmentId={id} />
+          <BackerTrackingView milestones={milestones || []} assignmentId={params.id} />
         ) : (
           <MilestoneManager
-            assignmentId={id}
+            assignmentId={params.id}
             milestones={milestones || []}
             isSupplier={isSupplier}
             canManage={isCreator || isSupplier}
@@ -389,7 +387,7 @@ export default async function AssignmentPage({ params }: { params: Promise<{ id:
             </div>
             <DisputeButton
               contextType="assignment"
-              contextId={id}
+              contextId={params.id}
               contextTitle={docJson.title}
             />
           </div>

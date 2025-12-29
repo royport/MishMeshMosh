@@ -12,11 +12,12 @@ interface SearchParams {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const supabase = createClient();
-  const page = parseInt(searchParams.page || '1');
-  const search = searchParams.search || '';
+  const params = await searchParams;
+  const page = parseInt(params.page || '1');
+  const search = params.search || '';
   const perPage = 20;
   const offset = (page - 1) * perPage;
 

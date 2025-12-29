@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CampaignOffersPage({ params }: { params: { id: string } }) {
+export default async function CampaignOffersPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -13,13 +13,15 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
     notFound();
   }
 
+  const { id } = await params;
+
   const { data: campaign, error } = await supabase
     .from('campaigns')
     .select(`
       *,
       feed_campaigns(*)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'feed')
     .maybeSingle();
 
@@ -53,7 +55,7 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
         campaign_items(*)
       )
     `)
-    .eq('campaign_id', params.id)
+    .eq('campaign_id', id)
     .eq('status', 'signed')
     .order('submitted_at', { ascending: true });
 
@@ -66,7 +68,7 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="mb-8">
           <Link
-            href={`/campaign/${params.id}`}
+            href={`/campaign/${id}`}
             className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
           >
             ← Back to Campaign
@@ -213,7 +215,7 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
                       <div className="border-t border-slate-200 pt-6">
                         <div className="flex items-center justify-between">
                           <Link
-                            href={`/campaign/${params.id}/offers/${offer.id}`}
+                            href={`/campaign/${id}/offers/${offer.id}`}
                             className="text-blue-600 hover:text-blue-700 font-medium"
                           >
                             View Detailed Breakdown →
@@ -221,7 +223,7 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
 
                           {campaign.status_feed === 'open' && (
                             <Link
-                              href={`/campaign/${params.id}/offers/${offer.id}/select`}
+                              href={`/campaign/${id}/offers/${offer.id}/select`}
                               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-green-700 transition-all shadow-md"
                             >
                               Select This Supplier
@@ -244,7 +246,7 @@ export default async function CampaignOffersPage({ params }: { params: { id: str
                   View a detailed comparison table to make an informed decision
                 </p>
                 <Link
-                  href={`/campaign/${params.id}/offers/compare`}
+                  href={`/campaign/${id}/offers/compare`}
                   className="inline-block px-8 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors"
                 >
                   Compare Offers

@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CompareOffersPage({ params }: { params: { id: string } }) {
+export default async function CompareOffersPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -13,10 +13,12 @@ export default async function CompareOffersPage({ params }: { params: { id: stri
     notFound();
   }
 
+  const { id } = await params;
+
   const { data: campaign, error } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'feed')
     .maybeSingle();
 
@@ -42,14 +44,14 @@ export default async function CompareOffersPage({ params }: { params: { id: stri
         campaign_items(*)
       )
     `)
-    .eq('campaign_id', params.id)
+    .eq('campaign_id', id)
     .eq('status', 'signed')
     .order('submitted_at', { ascending: true });
 
   const { data: items } = await supabase
     .from('campaign_items')
     .select('*')
-    .eq('campaign_id', params.id)
+    .eq('campaign_id', id)
     .order('item_code', { ascending: true });
 
   if (!offers || offers.length === 0) {
@@ -112,7 +114,7 @@ export default async function CompareOffersPage({ params }: { params: { id: stri
       <div className="max-w-full mx-auto px-4 py-12">
         <div className="mb-8 max-w-7xl mx-auto">
           <Link
-            href={`/campaign/${params.id}/offers`}
+            href={`/campaign/${id}/offers`}
             className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
           >
             ← Back to Offers
@@ -194,7 +196,7 @@ export default async function CompareOffersPage({ params }: { params: { id: stri
                   {offerTotals.map((offer: any) => (
                     <td key={offer.offerId} className="px-6 py-4 text-center">
                       <Link
-                        href={`/campaign/${params.id}/offers/${offer.offerId}/select`}
+                        href={`/campaign/${id}/offers/${offer.offerId}/select`}
                         className="inline-block px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Select

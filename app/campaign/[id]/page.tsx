@@ -8,8 +8,10 @@ import { canUserManuallyTransition } from '@/lib/campaign-transitions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CampaignPage({ params }: { params: { id: string } }) {
+export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = createClient();
+
+  const { id } = await params;
 
   const { data: campaign, error } = await supabase
     .from('campaigns')
@@ -26,7 +28,7 @@ export default async function CampaignPage({ params }: { params: { id: string } 
         )
       )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('kind', 'need')
     .maybeSingle();
 
