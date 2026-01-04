@@ -18,7 +18,7 @@ export default function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">My Offers</h1>
-        <p className="mt-1 text-sm text-neutral-600">Supplier offers you’ve made or received.</p>
+        <p className="mt-1 text-sm text-neutral-600">Supplier offers youï¿½ve made or received.</p>
         {email ? <p className="mt-2 text-sm text-neutral-500">Signed in as <span className="font-medium text-neutral-800">{email}</span></p> : null}
       </div>
 

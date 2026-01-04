@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LoginForm } from '@/components/auth/login-form';
+import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -12,8 +13,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       {/* Back to home link */}
       <div className="absolute top-4 left-4">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,11 +26,14 @@ export default function LoginPage() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex justify-center">
-          <img
+
+        <Image src="/mishmeshmosh_black.png" alt="MishMeshMosh" width={200} height={80} priority />
+
+          {/* <img
             src="/mishmeshmosh_black.png"
             alt="MishMeshMosh"
             className="h-12"
-          />
+          /> */}
         </Link>
         <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
           Sign in to your account
