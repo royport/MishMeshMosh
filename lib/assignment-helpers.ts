@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 
 export async function findNeedCampaignForFeed(feedCampaignId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: auditLog } = await supabase
     .from('audit_logs')
@@ -19,7 +19,7 @@ export async function findNeedCampaignForFeed(feedCampaignId: string) {
 }
 
 export async function getSelectedOfferForFeed(feedCampaignId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: offer } = await supabase
     .from('supplier_offers')
@@ -32,7 +32,7 @@ export async function getSelectedOfferForFeed(feedCampaignId: string) {
 }
 
 export async function checkAssignmentExists(feedCampaignId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: assignment } = await supabase
     .from('assignments')

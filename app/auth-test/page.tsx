@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 
-export default function AuthTestPage() {
+export default async function AuthTestPage() {
   const router = useRouter();
   const [status, setStatus] = useState<string>('Checking...');
   const [user, setUser] = useState<any>(null);
@@ -13,7 +13,7 @@ export default function AuthTestPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const supabase = createClient();
+        const supabase = await createSupabaseBrowser();
         
         // Check session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -97,7 +97,7 @@ export default function AuthTestPage() {
             </button>
             <button
               onClick={async () => {
-                const supabase = createClient();
+                const supabase = await createSupabaseBrowser();
                 await supabase.auth.signOut();
                 window.location.reload();
               }}

@@ -7,7 +7,7 @@ import { getDeedVersionHistory } from '@/lib/deed-operations';
 export const dynamic = 'force-dynamic';
 
 export default async function DeedPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 // Demo data seeding endpoint
 export async function POST(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

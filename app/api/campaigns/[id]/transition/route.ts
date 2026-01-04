@@ -12,7 +12,7 @@ export async function POST(
   try {
     const { id: campaignId } = await params; // ✅ Next 16: params is a Promise
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,

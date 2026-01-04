@@ -8,7 +8,7 @@ import { DisputeButton } from '@/components/trust/dispute-button';
 export const dynamic = 'force-dynamic';
 
 export default async function AssignmentPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 
 export function LoginForm() {
@@ -19,7 +19,7 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
+    const supabase = createSupabaseBrowser();
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -38,11 +38,9 @@ export function LoginForm() {
         console.log('Session established:', data.session.user.email);
         showToast('Signed in successfully! Redirecting...', 'success');
 
-        // Force a full page reload to ensure cookies are properly set
-        // and recognized by the middleware
-        setTimeout(() => {
-          window.location.replace('/api/auth/login-callback?redirectTo=/workspace');
-        }, 300);
+        // In WebContainers / iframes cookies can be blocked. Use the same
+        // client-side redirect approach as the working sample app.
+        router.replace('/workspace');
       } else {
         console.error('No session returned');
         showToast('Login failed - no session created. Please try again.', 'error');

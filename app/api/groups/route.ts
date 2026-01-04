@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 // GET - List groups for current user
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 // POST - Create a new group
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

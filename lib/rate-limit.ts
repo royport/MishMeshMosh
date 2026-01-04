@@ -63,7 +63,7 @@ export async function withRateLimit(
   handler: () => Promise<NextResponse>
 ): Promise<NextResponse> {
   // Get identifier (IP or user ID)
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   const forwardedFor = request.headers.get('x-forwarded-for');

@@ -5,7 +5,7 @@ import { DemoDataSeeder } from '@/components/admin/demo-data-seeder';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get platform stats
   const { count: totalUsers } = await supabase

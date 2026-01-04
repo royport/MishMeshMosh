@@ -10,7 +10,7 @@ export async function POST(
   try {
     const { id: disputeId } = await params; // ✅ THIS is the missing part
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

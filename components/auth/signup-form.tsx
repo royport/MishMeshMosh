@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 
 export function SignupForm() {
@@ -32,7 +32,7 @@ export function SignupForm() {
       return;
     }
 
-    const supabase = createClient();
+    const supabase = createSupabaseBrowser();
 
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,

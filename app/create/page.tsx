@@ -15,7 +15,7 @@ interface CreateCampaignPageProps {
 }
 
 export default async function CreateCampaignPage({ searchParams }: CreateCampaignPageProps) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

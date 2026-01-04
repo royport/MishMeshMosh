@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const redirectTo = searchParams.get('redirectTo') || '/workspace';
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {

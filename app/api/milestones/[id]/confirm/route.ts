@@ -7,7 +7,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params; // ✅ this is what you’re missing
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,

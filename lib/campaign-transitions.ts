@@ -13,7 +13,7 @@ export interface CampaignProgress {
 }
 
 export async function getCampaignProgress(campaignId: string): Promise<CampaignProgress | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc('get_campaign_progress', {
     p_campaign_id: campaignId,
@@ -28,7 +28,7 @@ export async function getCampaignProgress(campaignId: string): Promise<CampaignP
 }
 
 export async function evaluateCampaignThresholds(campaignId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc('evaluate_campaign_thresholds', {
     p_campaign_id: campaignId,
@@ -43,7 +43,7 @@ export async function evaluateCampaignThresholds(campaignId: string) {
 }
 
 export async function transitionCampaignToSeeded(campaignId: string, userId?: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { error } = await supabase.rpc('transition_campaign_to_seeded', {
     p_campaign_id: campaignId,
@@ -70,7 +70,7 @@ export async function transitionCampaignToSeeded(campaignId: string, userId?: st
 }
 
 export async function closeExpiredCampaigns() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc('close_expired_campaigns');
 
@@ -83,7 +83,7 @@ export async function closeExpiredCampaigns() {
 }
 
 export async function canUserManuallyTransition(userId: string): Promise<boolean> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('platform_permissions')

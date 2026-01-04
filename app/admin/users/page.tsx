@@ -14,7 +14,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const params = await searchParams;
   const page = parseInt(params.page || '1');
   const search = params.search || '';

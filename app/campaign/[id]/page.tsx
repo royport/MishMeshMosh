@@ -9,7 +9,7 @@ import { canUserManuallyTransition } from '@/lib/campaign-transitions';
 export const dynamic = 'force-dynamic';
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { id } = await params;
 

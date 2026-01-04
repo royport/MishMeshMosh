@@ -1,36 +1,27 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export function createClient() {
+export async function createClient() {
+  // Next.js may treat cookies() as an async dynamic API in some runtimes (e.g., WebContainer/Edge).
+  // Awaiting is safe even when cookies() is sync (await will just return the value).
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookieStore = await cookies();
-          const cookie = cookieStore.get(name);
-          return cookie?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-       async  set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-           const cookieStore = await cookies();
-          cookieStore.set({ name, value, ...options });
-          } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-        async remove(name: string, options: CookieOptions) {
-          try {
-          const cookieStore = await cookies();
-          cookieStore.set({ name, value: '', ...options });
-               } catch (error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // If called from a Server Component (not a Route Handler), this can throw.
+            // It's safe to ignore; client-side auth will still function.
           }
         },
       },

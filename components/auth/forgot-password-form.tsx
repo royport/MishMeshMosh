@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 
 export function ForgotPasswordForm() {
@@ -15,7 +15,7 @@ export function ForgotPasswordForm() {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
+    const supabase = createSupabaseBrowser();
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`,

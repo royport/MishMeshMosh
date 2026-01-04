@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 import { useRouter } from 'next/navigation';
 
@@ -23,7 +23,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
+    const supabase = await createSupabaseBrowser();
 
     const { error } = await supabase.auth.updateUser({
       data: {

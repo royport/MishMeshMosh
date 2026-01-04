@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 import type { CampaignFormData, CampaignItemForm } from '@/lib/types/campaign';
 import { BasicsStep } from './wizard-steps/basics-step';
@@ -50,7 +50,7 @@ export function CampaignWizard({ initialGroupId }: CampaignWizardProps) {
 
   const saveDraft = async () => {
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await createSupabaseBrowser();
 
     try {
       if (draftId) {
@@ -192,7 +192,7 @@ export function CampaignWizard({ initialGroupId }: CampaignWizardProps) {
 
   const publishCampaign = async () => {
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await createSupabaseBrowser();
 
     try {
       const saved = await saveDraft();

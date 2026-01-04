@@ -1,49 +1,31 @@
 import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          if (typeof document === 'undefined') return undefined;
-          const cookies = document.cookie.split(';');
-          for (const cookie of cookies) {
-            const [cookieName, cookieValue] = cookie.trim().split('=');
-            if (cookieName === name) {
-              return decodeURIComponent(cookieValue);
-            }
-          }
-          return undefined;
-        },
-        set(name: string, value: string, options: any) {
-          if (typeof document === 'undefined') return;
-          let cookie = `${name}=${encodeURIComponent(value)}`;
+let browserClient: SupabaseClient | null = null;
 
-          if (options?.maxAge) {
-            cookie += `; max-age=${options.maxAge}`;
-          }
-          if (options?.path) {
-            cookie += `; path=${options.path}`;
-          }
-          if (options?.domain) {
-            cookie += `; domain=${options.domain}`;
-          }
-          if (options?.sameSite) {
-            cookie += `; samesite=${options.sameSite}`;
-          }
-          if (options?.secure) {
-            cookie += '; secure';
-          }
+/**
+ * Browser Supabase client (singleton).
+ *
+ * Notes:
+ * - In some embedded environments (StackBlitz/Bolt webcontainers), cookies can be blocked.
+ * - Supabase will then fall back to in-memory/local storage depending on the runtime.
+ * - For production (Hostinger + your domain), cookies should work as expected.
+ */
+export function createSupabaseBrowser(): SupabaseClient {
+  if (browserClient) return browserClient;
 
-          document.cookie = cookie;
-        },
-        remove(name: string, options: any) {
-          if (typeof document === 'undefined') return;
-          this.set(name, '', { ...options, maxAge: 0 });
-        },
-      },
-    }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anon) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  }
+
+  browserClient = createBrowserClient(url, anon);
+  return browserClient;
+}
+
+// Backwards-compat alias (some files import createClient())
+export function createClient(): SupabaseClient {
+  return createSupabaseBrowser();
 }

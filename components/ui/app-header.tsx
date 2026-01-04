@@ -4,21 +4,38 @@ import Image from "next/image";
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import NotificationBadge from '@/components/notifications/notification-badge';
-import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { NotificationBadge } from '@/components/notifications/notification-badge';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 
 export function AppHeader() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    checkAuthStatus();
+    const supabase = createSupabaseBrowser();
+
+    // initial
+    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(!!data.user));
+
+    // keep in sync
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  async function checkAuthStatus() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    setIsLoggedIn(!!user);
+  async function handleSignOut() {
+    const supabase = createSupabaseBrowser();
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setMobileMenuOpen(false);
+    router.push('/');
+    router.refresh();
   }
 
   return (
@@ -28,13 +45,14 @@ export function AppHeader() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
 
-             <Image
+              <Image
                 src="/mishmeshmosh_black.png"
                 alt="MishMeshMosh"
                 width={160}
                 height={40}
                 className="h-10"
                 priority
+                unoptimized
               />
             </Link>
           </div>
@@ -76,6 +94,13 @@ export function AppHeader() {
                 >
                   Workspace
                 </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="rounded-md border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Sign Out
+                </button>
               </>
             ) : (
               <>
@@ -150,20 +175,32 @@ export function AppHeader() {
               Create Need
             </Link>
             <div className="border-t border-neutral-200 pt-4">
-              <Link
-                href="/auth/login"
-                className="block rounded-md px-3 py-2 text-base font-medium text-neutral-700 hover:bg-neutral-100"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="block rounded-md bg-primary-600 px-3 py-2 text-base font-medium text-white hover:bg-primary-700 mt-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Get Started
-              </Link>
+              {isLoggedIn ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="block w-full rounded-md border border-neutral-200 px-3 py-2 text-left text-base font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-neutral-700 hover:bg-neutral-100"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="block rounded-md bg-primary-600 px-3 py-2 text-base font-medium text-white hover:bg-primary-700 mt-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

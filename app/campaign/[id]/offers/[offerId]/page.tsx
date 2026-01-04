@@ -9,7 +9,7 @@ export default async function OfferDetailPage({
 }: {
   params: Promise<{ id: string; offerId: string }>;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

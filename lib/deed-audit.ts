@@ -8,7 +8,7 @@ export async function logDeedEvent(
   userId?: string,
   metadata?: Record<string, any>
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { error } = await supabase.from('audit_logs').insert({
     actor_user_id: userId || null,
@@ -24,7 +24,7 @@ export async function logDeedEvent(
 }
 
 export async function getDeedAuditTrail(deedId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('audit_logs')

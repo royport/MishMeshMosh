@@ -6,7 +6,7 @@ export function isDeedImmutable(deed: any): boolean {
 }
 
 export async function canEditDeed(deedId: string, userId: string): Promise<{ canEdit: boolean; reason?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: deed, error } = await supabase
     .from('deeds')
@@ -34,7 +34,7 @@ export async function canEditDeed(deedId: string, userId: string): Promise<{ can
 }
 
 export async function createNewDeedVersion(originalDeedId: string, updatedDoc: any, userId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: originalDeed, error: fetchError } = await supabase
     .from('deeds')
@@ -82,7 +82,7 @@ function generateDeedHash(doc: any): string {
 }
 
 export async function getDeedVersionHistory(deedId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const versions: any[] = [];
   let currentId: string | null = deedId;

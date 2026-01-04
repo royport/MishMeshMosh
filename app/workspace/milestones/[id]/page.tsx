@@ -5,7 +5,7 @@ import SupplierMilestoneUpdateForm from '@/components/fulfillment/supplier-miles
 export const dynamic = 'force-dynamic';
 
 export default async function MilestoneUpdatePage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

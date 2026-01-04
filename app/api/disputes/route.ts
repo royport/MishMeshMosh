@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 // GET - List user's disputes
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -36,7 +36,7 @@ export async function GET() {
 // POST - Create a new dispute
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

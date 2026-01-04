@@ -11,7 +11,7 @@ export async function POST(
   try {
     const { id: groupId } = await params;
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -136,7 +136,7 @@ export async function DELETE(
   try {
     const { id: groupId } = await params;
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

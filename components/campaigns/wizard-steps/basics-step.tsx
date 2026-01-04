@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { CampaignFormData } from '@/lib/types/campaign';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 
 interface Group {
   id: string;
@@ -25,7 +25,7 @@ export function BasicsStep({ formData, updateFormData, initialGroupId }: BasicsS
   useEffect(() => {
     async function fetchGroups() {
       try {
-        const supabase = createClient();
+        const supabase = await createSupabaseBrowser();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) return;
