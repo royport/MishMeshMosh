@@ -13,10 +13,6 @@ export const QUADRANTS: QuadrantInfo[] = [
     color: '#6366f1', // Indigo
 
     iconPath: 'M3 11v2 M5 10h3l8-4v12l-8-4H5 M5 14l1.5 6H9l-1.5-6 M18.5 9.5l1-1 M19.5 12h1.5 M18.5 14.5l1 1',
-  // iconPath: 'M20 13V5a2 2 0 00-2-2H6a2 2 0 00-2 2v8m16 0h-5l-2 3h-2l-2-3H4m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6',
-
-
-    // iconPath: '',
   },
   {
     id: 'Q2',
@@ -86,9 +82,7 @@ export const CARDINAL_ITEMS: DialItem[] = [
     angle: 90,
     color: '#000000',
     // Watering Can Icon with Sprinkles
-    // iconPath: 'M4 12h10c1.1 0 2 .9 2 2v3c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2v-3c0-1.1.9-2 2-2z M9 12V9.5c0-1.4 1.1-2.5 2.5-2.5h1.5 M16 14l4.5-3.5 M20 8l.5-.5 M21.5 10.5l1 0 M21 13l.5.5',
-   iconPath: 'M20 13V5a2 2 0 00-2-2H6a2 2 0 00-2 2v8m16 0h-5l-2 3h-2l-2-3H4m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6',
-
+    iconPath: 'M4 12h10c1.1 0 2 .9 2 2v3c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2v-3c0-1.1.9-2 2-2z M9 12V9.5c0-1.4 1.1-2.5 2.5-2.5h1.5 M16 14l4.5-3.5 M20 8l.5-.5 M21.5 10.5l1 0 M21 13l.5.5',
   },
   {
     id: 'R',

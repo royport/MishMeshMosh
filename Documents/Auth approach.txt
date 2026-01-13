@@ -1,0 +1,141 @@
+Auth model:
+Next.js App Router + Supabase.
+We use two clients: createSupabaseBrowser() for client components and createClient() for server
+components/route handlers.
+OAuth returns to /auth/callback where we exchange the code for a session and set cookies server-side,
+then redirect to /workspace.
+Protected pages should validate supabase.auth.getUser() server-side and redirect to /auth/login if missing.
+Client components must not be async; do async work inside useEffect or handlers.
+Ensure source files are UTF-8 for builds (Hostinger + local).
+
+
+Auth approach (Supabase + Next.js App Router)
+1) Two Supabase clients: Browser vs Server
+
+We intentionally use two different Supabase client factories, depending on where the code runs:
+
+Browser client (@/lib/supabase/client → createSupabaseBrowser()):
+
+Used inside client components ('use client').
+
+For login form, sign-out button, client-side checks.
+
+Reads/writes the Supabase auth session in the browser context.
+
+Server client (@/lib/supabase/server → createClient()):
+
+Used in server components, route handlers (app/**/route.ts), and any server-only logic.
+
+Must be able to read/write auth cookies on the server (so the server knows who the user is).
+
+Rule of thumb:
+Client UI uses createSupabaseBrowser().
+Server routes/components use createClient().
+
+2) The OAuth “callback” route is the session setter
+
+app/auth/callback/route.ts is the endpoint Supabase redirects to after auth.
+
+What it does (conceptually):
+
+Reads code (and maybe next) from the URL query string.
+
+Calls supabase.auth.exchangeCodeForSession(code) on the server.
+
+That exchange writes the session cookies (important!) so future server requests “know” the user.
+
+Redirects to /workspace (or whatever next says).
+
+This is why the callback route must use the server client and must compile cleanly.
+
+3) Pages that require auth should check on the server (preferably)
+
+For protected pages like /workspace, the ideal pattern is:
+
+In the page/server component:
+
+const supabase = await createClient()
+
+const { data: { user } } = await supabase.auth.getUser()
+
+If no user → redirect('/auth/login')
+
+This avoids “flash of unauthenticated content” and prevents client-side bypass.
+
+You can also do a client-side check, but use it for UX only—not security.
+
+4) Sign out is usually client-side
+
+Sign out can be client-side:
+
+const supabase = createSupabaseBrowser()
+
+await supabase.auth.signOut()
+
+Then router.refresh() or window.location.reload() (either is fine)
+
+If you want a more “server clean” approach, you can also implement a server route for sign-out, but it’s optional.
+
+The key issues we hit (and why they matter)
+A) “stream did not contain valid UTF-8”
+
+Next/Webpack expects source files to be UTF-8. One file was saved with a different encoding and the build crashed.
+
+Project rule: ensure code files are UTF-8 (VS Code “Save with Encoding → UTF-8”).
+(Adding .gitattributes to normalize line endings also helps.)
+
+B) Client components must not be async
+
+React hooks (useState, useEffect, useRouter) can’t run inside an async function component.
+
+Rule:
+Client components are always synchronous functions. Put async work inside:
+
+useEffect
+
+event handlers
+
+or move logic to the server
+
+C) Keep exports consistent (the createSupabaseServer issue)
+
+app/auth/callback/route.ts imported a symbol that didn’t exist. That’s a pure API mismatch between files.
+
+Rule: only import what is actually exported from lib/supabase/server.ts.
+If you rename a helper, update all imports, or export an alias intentionally.
+
+Other key issues to watch next (common in this stack)
+1) Environment variables in Hostinger
+
+Supabase auth is super sensitive to:
+
+NEXT_PUBLIC_SUPABASE_URL
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+and sometimes SUPABASE_SERVICE_ROLE_KEY (server-only, if used)
+
+On Hostinger, make sure these are defined in the hosting panel (not just .env locally).
+
+2) Redirect loops / wrong site URL
+
+If login works locally but loops on hosting, it’s often:
+
+wrong Site URL / Redirect URLs in Supabase Auth settings
+
+proxy / HTTPS differences
+
+mixing server/client checks in a way that causes bounce
+
+3) Middleware (optional, but easy to misuse)
+
+Some templates add middleware that enforces auth by reading cookies. If it’s misconfigured, it can create loops.
+If you have middleware, it must use the right cookie methods for Next 15.
+
+4) RLS policies
+
+Even with auth working, “everything is empty” or “permission denied” usually means:
+
+RLS enabled but no policies
+
+policies don’t match expected roles

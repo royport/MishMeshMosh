@@ -15,19 +15,20 @@ export function HeroSection() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8">
             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-sm text-white/80">Demand-First Commerce Platform</span>
+            <span className="text-sm text-white/80">Need‑First Supply Chain Platform</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
             Turn Shared Needs Into
             <span className="block bg-gradient-to-r from-primary-400 via-emerald-400 to-purple-400 bg-clip-text text-transparent">
-              Supplier-Ready Deals
+              Contract‑Ready Demand
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-            MishMeshMosh makes <span className="text-white font-semibold">NEED</span> the catalyst, not a reaction to supply.
-            Anyone can raise a real need, validate it with others, and route demand to suppliers under clear, pre-defined terms.
+            Start with a <span className="text-white font-semibold">NEED</span> (not a supplier catalog).
+            Define the terms, gather backers, and when the threshold is met your demand becomes a <span className="text-white font-semibold">SEED</span>
+            that suppliers can compete to fulfill.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -55,16 +56,16 @@ export function HeroSection() {
           {/* Stats */}
           <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-white">0%</p>
-              <p className="text-sm text-slate-400 mt-1">Upfront Risk</p>
+              <p className="text-3xl sm:text-4xl font-bold text-white">Terms</p>
+              <p className="text-sm text-slate-400 mt-1">Defined first</p>
             </div>
             <div className="text-center border-x border-white/10">
-              <p className="text-3xl sm:text-4xl font-bold text-white">100%</p>
-              <p className="text-sm text-slate-400 mt-1">Transparency</p>
+              <p className="text-3xl sm:text-4xl font-bold text-white">Demand</p>
+              <p className="text-sm text-slate-400 mt-1">Aggregated</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-white">∞</p>
-              <p className="text-sm text-slate-400 mt-1">Possibilities</p>
+              <p className="text-3xl sm:text-4xl font-bold text-white">Supply</p>
+              <p className="text-sm text-slate-400 mt-1">Competes</p>
             </div>
           </div>
         </div>
