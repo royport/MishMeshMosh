@@ -1,0 +1,208 @@
+MishMeshMosh Database – Current State Overview
+======================================
+
+This document explains the database as it exists now, based strictly on the
+current public schema and the column inventory CSV exported from Supabase.
+
+--------------------------------------------------
+1. Overall Structure
+--------------------------------------------------
+
+The database is organized around a demand-first lifecycle:
+
+Need Campaign → Feed Campaign → Deeds → Fulfillment
+
+Core domains:
+- Identity & permissions
+- Groups & memberships
+- Campaign lifecycle (Need / Feed)
+- Pledges & supplier offers
+- Deeds & signatures
+- Fulfillment tracking
+- System logs & notifications
+
+The database enforces rules primarily via:
+- Foreign keys
+- Enum types
+- Row Level Security (RLS) policies
+- Triggers & helper functions
+
+--------------------------------------------------
+2. Identity & Access Control
+--------------------------------------------------
+
+Tables:
+- profiles
+- platform_permissions
+- notifications
+
+Key points:
+- profiles.id references auth.users(id) (Supabase-managed)
+- platform_permissions defines admin / moderator / auditor roles
+- RLS relies heavily on auth.uid() and is_platform_admin()
+
+Restrictions:
+- Users can only see or modify rows they own or are explicitly related to
+- Admins bypass most restrictions via policy checks
+
+--------------------------------------------------
+3. Groups & Membership
+--------------------------------------------------
+
+Tables:
+- groups
+- group_members
+
+Relationships:
+- groups.owner_id → profiles.id
+- group_members.group_id → groups.id
+- group_members.user_id → profiles.id
+
+Rules:
+- A user can be a member of many groups
+- Group owners (and admins) can see all members
+- Regular users can only see their own membership rows
+
+--------------------------------------------------
+4. Campaign Core
+--------------------------------------------------
+
+Tables:
+- campaigns
+- campaign_items
+
+campaigns:
+- kind: need | feed
+- status_need / status_feed drive lifecycle
+- created_by defines ownership
+
+campaign_items:
+- Linked to campaigns
+- Represent items/services being aggregated or offered
+
+Restrictions:
+- Only campaign creators, group owners, or admins can modify campaigns
+- Read access is broader for active participation
+
+--------------------------------------------------
+5. Need Campaigns (Demand Side)
+--------------------------------------------------
+
+Tables:
+- need_campaigns
+- need_pledges
+- need_pledge_rows
+
+Flow:
+- need_campaigns holds thresholds and deadline
+- need_pledges = one per backer
+- need_pledge_rows = item-level quantities
+
+Rules:
+- Only active pledges count toward thresholds
+- Threshold evaluation is handled by DB functions
+- Campaign automatically transitions when conditions are met
+
+--------------------------------------------------
+6. Feed Campaigns (Supply Side)
+--------------------------------------------------
+
+Tables:
+- feed_campaigns
+- supplier_offers
+- supplier_offer_rows
+
+Flow:
+- Feed campaigns are created from seeded Need campaigns
+- Suppliers submit offers per item
+- Offers can be accepted/rejected via later stages
+
+Restrictions:
+- Only suppliers (or admins) can submit offers
+- Campaign owners control acceptance
+
+--------------------------------------------------
+7. Deeds & Commitments
+--------------------------------------------------
+
+Tables:
+- deeds
+- deed_signers
+- deed_templates
+
+Concept:
+- A deed is a formal contract-like object
+- deed_signers replaces any legacy signer_id field
+
+Rules:
+- A user can read a deed if:
+  - They created it
+  - They are listed as a signer
+  - They are a platform admin
+
+--------------------------------------------------
+8. Fulfillment
+--------------------------------------------------
+
+Tables:
+- fulfillment_milestones
+- reed_assignments
+
+Purpose:
+- Track execution after deals are closed
+- Assign suppliers and monitor delivery stages
+
+Automation:
+- updated_at maintained by triggers
+- Status changes logged
+
+--------------------------------------------------
+9. Auditing & System Tables
+--------------------------------------------------
+
+Tables:
+- audit_logs
+- notifications
+
+audit_logs:
+- Immutable history of important actions
+- Written only via functions / triggers
+
+notifications:
+- Fan-out messages created by DB logic
+- Read-restricted per recipient
+
+--------------------------------------------------
+10. Why the CSV Is Longer Than the Original
+--------------------------------------------------
+
+Your exported CSV is longer because:
+
+1) One row per COLUMN, not per table
+   - A table with 20 columns = 20 rows
+
+2) Includes system-generated defaults
+   - Identity sequences
+   - now(), gen_random_uuid(), etc.
+
+3) Expands enum & nullable metadata
+   - Each column carries its own attributes
+
+4) Supabase export is denormalized
+   - Designed for analysis, not human reading
+
+So:
+- Original SQL feels shorter (grouped logically)
+- CSV is verbose by design (flat, column-level)
+
+--------------------------------------------------
+11. Key Takeaway
+--------------------------------------------------
+
+The DB is:
+- Highly relational
+- Strongly policy-driven
+- Lifecycle-oriented (state machines in SQL)
+- Safe to rebuild from clean schema + policies
+
+This document reflects the DB as-is — not aspirational, not UI-level.
