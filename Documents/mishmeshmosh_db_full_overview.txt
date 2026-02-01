@@ -1,0 +1,729 @@
+MishMeshMosh – Full Database Overview (Public Schema)
+
+Generated: 2026-02-01T12:58:52
+
+Source: Supabase schema export (db_download.txt) + visual ERD screenshot.
+
+Important: This document reflects table/column definitions + SQL constraints present in the export.
+Indexes, RLS policies, triggers, and functions may exist in your project but are NOT fully represented in this export unless included.
+
+========================================================================
+
+A) Table List (25)
+------------------
+- assignment_need_deeds
+- assignments
+- audit_logs
+- campaign_items
+- campaigns
+- commitments
+- deed_signers
+- deeds
+- disputes
+- feed_campaigns
+- fulfillment_events
+- fulfillment_milestones
+- group_members
+- groups
+- need_campaigns
+- need_pledge_rows
+- need_pledges
+- notifications
+- participations
+- platform_permissions
+- profiles
+- supplier_offer_rows
+- supplier_offers
+- user_verifications
+- users
+
+B) Foreign Key Relationship Map
+-------------------------------
+- assignment_need_deeds.assignment_id → public.assignments.id
+- assignment_need_deeds.need_deed_id → public.deeds.id
+- assignments.assignment_deed_id → public.deeds.id
+- assignments.campaign_feed_id → public.campaigns.id
+- assignments.campaign_need_id → public.campaigns.id
+- assignments.selected_offer_id → public.supplier_offers.id
+- audit_logs.actor_user_id → public.users.id
+- campaign_items.campaign_id → public.campaigns.id
+- campaigns.created_by → public.users.id
+- campaigns.group_id → public.groups.id
+- commitments.campaign_id → public.campaigns.id
+- commitments.deed_id → public.deeds.id
+- commitments.user_id → auth.users.id
+- deed_signers.deed_id → public.deeds.id
+- deed_signers.user_id → public.users.id
+- deeds.campaign_id → public.campaigns.id
+- deeds.created_by → public.users.id
+- deeds.prev_deed_id → public.deeds.id
+- disputes.opened_by → public.users.id
+- feed_campaigns.campaign_id → public.campaigns.id
+- fulfillment_events.actor_user_id → public.users.id
+- fulfillment_events.assignment_id → public.assignments.id
+- fulfillment_milestones.assignment_id → public.assignments.id
+- group_members.group_id → public.groups.id
+- group_members.user_id → public.users.id
+- groups.owner_id → public.users.id
+- need_campaigns.campaign_id → public.campaigns.id
+- need_pledge_rows.campaign_item_id → public.campaign_items.id
+- need_pledge_rows.pledge_id → public.need_pledges.id
+- need_pledges.backer_id → public.users.id
+- need_pledges.campaign_id → public.campaigns.id
+- notifications.user_id → public.users.id
+- participations.user_id → public.users.id
+- platform_permissions.user_id → public.users.id
+- profiles.id → auth.users.id
+- supplier_offer_rows.campaign_item_id → public.campaign_items.id
+- supplier_offer_rows.offer_id → public.supplier_offers.id
+- supplier_offers.campaign_id → public.campaigns.id
+- supplier_offers.supplier_id → public.users.id
+- user_verifications.user_id → public.users.id
+
+C) Table-by-Table Reference
+---------------------------
+
+assignment_need_deeds
+---------------------
+Purpose: Join table linking assignments to deeds that represent need-side commitments.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- assignment_id: uuid NOT NULL
+- need_deed_id: uuid NOT NULL
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- assignment_need_deeds_pkey PRIMARY KEY (id)
+Foreign keys:
+- assignment_need_deeds_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.assignments(id)
+- assignment_need_deeds_need_deed_id_fkey FOREIGN KEY (need_deed_id) REFERENCES public.deeds(id)
+Unique constraints:
+None
+
+Notes:
+
+
+assignments
+-----------
+Purpose: Represents awarding/assignment decisions (selecting an offer, moving toward fulfillment).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- campaign_need_id: uuid
+- campaign_feed_id: uuid
+- selected_offer_id: uuid
+- assignment_deed_id: uuid
+- status: USER-DEFINED NOT NULL DEFAULT 'draft'::assignment_status
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- executed_at: timestamp with time zone
+
+Keys & Constraints:
+Primary key:
+- assignments_pkey PRIMARY KEY (id)
+Foreign keys:
+- assignments_campaign_need_id_fkey FOREIGN KEY (campaign_need_id) REFERENCES public.campaigns(id)
+- assignments_campaign_feed_id_fkey FOREIGN KEY (campaign_feed_id) REFERENCES public.campaigns(id)
+- assignments_selected_offer_id_fkey FOREIGN KEY (selected_offer_id) REFERENCES public.supplier_offers(id)
+- assignments_assignment_deed_id_fkey FOREIGN KEY (assignment_deed_id) REFERENCES public.deeds(id)
+Unique constraints:
+None
+
+Notes:
+- User-defined types (enums/citext/etc) present on: status
+
+
+audit_logs
+----------
+Purpose: Append-only audit trail for key operations (who/what/when).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- actor_user_id: uuid
+- action: text NOT NULL
+- entity_type: text NOT NULL
+- entity_id: uuid NOT NULL
+- payload_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- audit_logs_pkey PRIMARY KEY (id)
+Foreign keys:
+- audit_logs_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+
+
+campaign_items
+--------------
+Purpose: Items/services within a campaign (line items users pledge for / suppliers bid on).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- campaign_id: uuid NOT NULL
+- item_code: text
+- title: text NOT NULL
+- description: text
+- unit: text
+- variant_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- campaign_items_pkey PRIMARY KEY (id)
+Foreign keys:
+- campaign_items_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+Unique constraints:
+None
+
+Notes:
+
+
+campaigns
+---------
+Purpose: Top-level campaign record. `kind` distinguishes need vs feed; status fields drive lifecycle.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- kind: USER-DEFINED NOT NULL
+- title: text NOT NULL
+- description: text
+- visibility: USER-DEFINED NOT NULL DEFAULT 'public'::visibility
+- group_id: uuid
+- created_by: uuid
+- status_need: USER-DEFINED
+- status_feed: USER-DEFINED
+- starts_at: timestamp with time zone
+- ends_at: timestamp with time zone
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- updated_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- campaigns_pkey PRIMARY KEY (id)
+Foreign keys:
+- campaigns_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id)
+- campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: created_by
+- User-defined types (enums/citext/etc) present on: kind, visibility, status_need, status_feed
+
+
+commitments
+-----------
+Purpose: Generic commitments (can unify pledges/offers/other commitments).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- campaign_id: uuid NOT NULL
+- user_id: uuid NOT NULL
+- qty: integer NOT NULL DEFAULT 1
+- unit_price: numeric
+- total_value: numeric DEFAULT ((COALESCE(qty, 0))::numeric * COALESCE(unit_price, (0)::numeric))
+- deed_id: uuid
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- commitments_pkey PRIMARY KEY (id)
+Foreign keys:
+- commitments_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+- commitments_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+- commitments_deed_id_fkey FOREIGN KEY (deed_id) REFERENCES public.deeds(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+deed_signers
+------------
+Purpose: Signers/participants for a deed, with per-signer status/metadata.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- deed_id: uuid NOT NULL
+- user_id: uuid NOT NULL
+- signer_kind: text NOT NULL
+- status: text NOT NULL DEFAULT 'invited'::text
+- signed_at: timestamp with time zone
+- signature_meta_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- deed_signers_pkey PRIMARY KEY (id)
+Foreign keys:
+- deed_signers_deed_id_fkey FOREIGN KEY (deed_id) REFERENCES public.deeds(id)
+- deed_signers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+deeds
+-----
+Purpose: Contract-like documents tied to campaigns/assignments; stored as JSON/doc_url+hash with status.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- deed_kind: USER-DEFINED NOT NULL
+- status: USER-DEFINED NOT NULL DEFAULT 'draft'::deed_status
+- campaign_id: uuid
+- version: integer NOT NULL DEFAULT 1 CHECK (version >= 1)
+- prev_deed_id: uuid
+- doc_json: jsonb NOT NULL
+- doc_hash: text NOT NULL
+- pdf_url: text
+- created_by: uuid
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- opened_for_signature_at: timestamp with time zone
+- executed_at: timestamp with time zone
+
+Keys & Constraints:
+Primary key:
+- deeds_pkey PRIMARY KEY (id)
+Foreign keys:
+- deeds_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+- deeds_prev_deed_id_fkey FOREIGN KEY (prev_deed_id) REFERENCES public.deeds(id)
+- deeds_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: created_by
+- User-defined types (enums/citext/etc) present on: deed_kind, status
+
+
+disputes
+--------
+Purpose: Dispute records related to campaigns/deeds/fulfillment (tracking resolution).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- context_type: text NOT NULL
+- context_id: uuid NOT NULL
+- opened_by: uuid
+- reason: text
+- status: text NOT NULL DEFAULT 'open'::text
+- resolution_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- closed_at: timestamp with time zone
+
+Keys & Constraints:
+Primary key:
+- disputes_pkey PRIMARY KEY (id)
+Foreign keys:
+- disputes_opened_by_fkey FOREIGN KEY (opened_by) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+
+
+feed_campaigns
+--------------
+Purpose: Feed-specific configuration for campaigns (supplier sourcing window etc).
+
+Fields:
+- campaign_id: uuid NOT NULL
+- bid_deadline_at: timestamp with time zone
+- award_method: text
+- eligibility_rules_json: jsonb
+- compliance_requirements_json: jsonb
+
+Keys & Constraints:
+Primary key:
+- feed_campaigns_pkey PRIMARY KEY (campaign_id)
+Foreign keys:
+- feed_campaigns_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+Unique constraints:
+None
+
+Notes:
+
+
+fulfillment_events
+------------------
+Purpose: Event log of fulfillment progress (timestamped status changes/notes).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- assignment_id: uuid NOT NULL
+- actor_user_id: uuid
+- event_type: text NOT NULL
+- payload_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- fulfillment_events_pkey PRIMARY KEY (id)
+Foreign keys:
+- fulfillment_events_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.assignments(id)
+- fulfillment_events_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+
+
+fulfillment_milestones
+----------------------
+Purpose: Milestones for delivery/execution after assignment (status tracked).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- assignment_id: uuid NOT NULL
+- title: text NOT NULL
+- due_at: timestamp with time zone
+- status: USER-DEFINED NOT NULL DEFAULT 'pending'::fulfillment_status
+- metadata_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- updated_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- fulfillment_milestones_pkey PRIMARY KEY (id)
+Foreign keys:
+- fulfillment_milestones_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.assignments(id)
+Unique constraints:
+None
+
+Notes:
+- User-defined types (enums/citext/etc) present on: status
+
+
+group_members
+-------------
+Purpose: Many-to-many membership linking users to groups with a member_role.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- group_id: uuid NOT NULL
+- user_id: uuid NOT NULL
+- member_role: text NOT NULL DEFAULT 'member'::text
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- group_members_pkey PRIMARY KEY (id)
+Foreign keys:
+- group_members_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id)
+- group_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+groups
+------
+Purpose: A group/organization container. Owned by a user; controls visibility and collaboration.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- name: text NOT NULL
+- owner_id: uuid
+- visibility: USER-DEFINED NOT NULL DEFAULT 'private'::visibility
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- updated_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- groups_pkey PRIMARY KEY (id)
+Foreign keys:
+- groups_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: owner_id
+- User-defined types (enums/citext/etc) present on: visibility
+
+
+need_campaigns
+--------------
+Purpose: Need-specific configuration for campaigns (thresholds, deadline, etc).
+
+Fields:
+- campaign_id: uuid NOT NULL
+- threshold_type: text NOT NULL
+- threshold_qty: numeric
+- threshold_value: numeric
+- currency: text
+- deadline_at: timestamp with time zone
+- deposit_policy_json: jsonb
+- payment_structure_json: jsonb
+- delivery_terms_json: jsonb
+- cancellation_terms_json: jsonb
+
+Keys & Constraints:
+Primary key:
+- need_campaigns_pkey PRIMARY KEY (campaign_id)
+Foreign keys:
+- need_campaigns_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+Unique constraints:
+None
+
+Notes:
+
+
+need_pledge_rows
+----------------
+Purpose: Item-level quantities inside a pledge.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- pledge_id: uuid NOT NULL
+- campaign_item_id: uuid NOT NULL
+- quantity: numeric NOT NULL CHECK (quantity > 0::numeric)
+- constraints_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- need_pledge_rows_pkey PRIMARY KEY (id)
+Foreign keys:
+- need_pledge_rows_pledge_id_fkey FOREIGN KEY (pledge_id) REFERENCES public.need_pledges(id)
+- need_pledge_rows_campaign_item_id_fkey FOREIGN KEY (campaign_item_id) REFERENCES public.campaign_items(id)
+Unique constraints:
+None
+
+Notes:
+
+
+need_pledges
+------------
+Purpose: A backer’s pledge/commitment to a need campaign.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- campaign_id: uuid NOT NULL
+- backer_id: uuid NOT NULL
+- status: text NOT NULL DEFAULT 'active'::text
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- need_pledges_pkey PRIMARY KEY (id)
+Foreign keys:
+- need_pledges_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+- need_pledges_backer_id_fkey FOREIGN KEY (backer_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: backer_id
+
+
+notifications
+-------------
+Purpose: In-app notifications delivered to a user (read state).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- user_id: uuid NOT NULL
+- kind: text NOT NULL
+- context_type: text
+- context_id: uuid
+- payload_json: jsonb
+- read_at: timestamp with time zone
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- notifications_pkey PRIMARY KEY (id)
+Foreign keys:
+- notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+participations
+--------------
+Purpose: Generic participation records (user ↔ campaign) with role/status.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- user_id: uuid NOT NULL
+- context_type: text NOT NULL
+- context_id: uuid NOT NULL
+- participation_kind: USER-DEFINED NOT NULL
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- participations_pkey PRIMARY KEY (id)
+Foreign keys:
+- participations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+- User-defined types (enums/citext/etc) present on: participation_kind
+
+
+platform_permissions
+--------------------
+Purpose: Assigns platform roles/permissions to users (admin/moderator/auditor scopes).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- user_id: uuid NOT NULL
+- permission: text NOT NULL
+- scope: text
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- platform_permissions_pkey PRIMARY KEY (id)
+Foreign keys:
+- platform_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+profiles
+--------
+Purpose: Supabase-facing profile table keyed by auth.users(id). Holds display info + verification flags.
+
+Fields:
+- id: uuid NOT NULL
+- email: USER-DEFINED
+- full_name: text
+- phone: text
+- role: text DEFAULT 'user'::text
+- verified: boolean NOT NULL DEFAULT false
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- updated_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- profiles_pkey PRIMARY KEY (id)
+Foreign keys:
+- profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+Unique constraints:
+None
+
+Notes:
+- User-defined types (enums/citext/etc) present on: email
+
+
+supplier_offer_rows
+-------------------
+Purpose: Item-level pricing/terms for a supplier offer.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- offer_id: uuid NOT NULL
+- campaign_item_id: uuid NOT NULL
+- unit_price: numeric NOT NULL CHECK (unit_price >= 0::numeric)
+- min_qty: numeric CHECK (min_qty IS NULL OR min_qty >= 0::numeric)
+- lead_time_days: integer CHECK (lead_time_days IS NULL OR lead_time_days >= 0)
+- notes: text
+- terms_json: jsonb
+
+Keys & Constraints:
+Primary key:
+- supplier_offer_rows_pkey PRIMARY KEY (id)
+Foreign keys:
+- supplier_offer_rows_offer_id_fkey FOREIGN KEY (offer_id) REFERENCES public.supplier_offers(id)
+- supplier_offer_rows_campaign_item_id_fkey FOREIGN KEY (campaign_item_id) REFERENCES public.campaign_items(id)
+Unique constraints:
+None
+
+Notes:
+
+
+supplier_offers
+---------------
+Purpose: A supplier’s offer to satisfy a feed campaign.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- campaign_id: uuid NOT NULL
+- supplier_id: uuid NOT NULL
+- status: USER-DEFINED NOT NULL DEFAULT 'draft'::offer_status
+- terms_json: jsonb
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- submitted_at: timestamp with time zone
+
+Keys & Constraints:
+Primary key:
+- supplier_offers_pkey PRIMARY KEY (id)
+Foreign keys:
+- supplier_offers_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+- supplier_offers_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: supplier_id
+- User-defined types (enums/citext/etc) present on: status
+
+
+user_verifications
+------------------
+Purpose: Tracks verification events/methods for a user (KYC-lite).
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- user_id: uuid NOT NULL
+- method: text NOT NULL
+- status: text NOT NULL
+- metadata_json: jsonb
+- verified_at: timestamp with time zone
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- user_verifications_pkey PRIMARY KEY (id)
+Foreign keys:
+- user_verifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+Unique constraints:
+None
+
+Notes:
+- Ownership/actor columns present: user_id
+
+
+users
+-----
+Purpose: App-level user profile table (separate from Supabase auth.users). Used as FK target for most ownership fields.
+
+Fields:
+- id: uuid NOT NULL DEFAULT gen_random_uuid()
+- email: text UNIQUE
+- phone: text UNIQUE
+- full_name: text
+- created_at: timestamp with time zone NOT NULL DEFAULT now()
+- updated_at: timestamp with time zone NOT NULL DEFAULT now()
+
+Keys & Constraints:
+Primary key:
+- users_pkey PRIMARY KEY (id)
+Foreign keys:
+None
+Unique constraints:
+None
+
+Notes:
+
